@@ -33,7 +33,7 @@ func initialModel() model {
 	return model{
 		cursor:        0,
 		CurrentMenu:   MainMenu,
-		MainOptions:   []string{"Scan Devices", "Paired Connections", "Quit"},
+		MainOptions:   []string{"Scan Devices", "Paired Connections"},
 		ScanResults:   []string{"testres1", "testres2", "testres3"},
 		PairedDevices: []string{"paired1", "Paired2", "paired3"},
 	}
@@ -54,18 +54,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case "j", "down":
-			var maxOptions int
-
-			switch m.CurrentMenu {
-
-			case MainMenu:
-				maxOptions = len(m.MainOptions)
-			case ScanMenu:
-				maxOptions = len(m.ScanResults)
-			case PairedMenu:
-				maxOptions = len(m.PairedDevices)
-			}
-			if m.cursor < maxOptions-1 {
+			if m.cursor < m.itemCount()-1 {
 				m.cursor++
 			}
 
@@ -77,20 +66,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			if m.CurrentMenu == MainMenu {
 
-				switch m.MainOptions[m.cursor]{
-			
+				switch m.MainOptions[m.cursor] {
 				case "Scan Devices":
 					m.CurrentMenu = ScanMenu
 				case "Paired Connections":
 					m.CurrentMenu = PairedMenu
 				}
+				m.cursor = 0 // reset cursor pos
 			}
-			// _, ok := m.done[m.cursor]
-			// if ok {
-			// 	delete(m.done, m.cursor)
-			// } else {
-			// 	m.done[m.cursor] = struct{}{}
-			// }
 		}
 
 	}
@@ -104,38 +87,43 @@ func (m model) View() string {
 	switch m.CurrentMenu {
 
 	case MainMenu:
-		for i, option := range m.MainOptions {
-			cursor := ""
-			if m.cursor == i {
-				cursor = "<"
-			}
-
-			s += fmt.Sprintf("%s %s\n", option, cursor)
-		}
-
+		s += renderList(m.MainOptions, m.cursor)
 	case ScanMenu:
-		for i, option := range m.ScanResults {
-			cursor := ""
-			if m.cursor == i {
-				cursor = "<"
-			}
-
-			s += fmt.Sprintf("%s %s\n", option, cursor)
-		}
+		s += "Scan Results\n" + renderList(m.ScanResults, m.cursor)
 	case PairedMenu:
-		for i, option := range m.PairedDevices {
-			cursor := ""
-			if m.cursor == i {
-				cursor = "<"
-			}
-
-			s += fmt.Sprintf("%s %s\n", option, cursor)
-		}
+		s += "Paired Devices\n" + renderList(m.PairedDevices, m.cursor)
 
 	}
 
 	// footer
 	s += "\npress q to quit.\n"
 
+	return s
+}
+
+func (m model) itemCount() int {
+	switch m.CurrentMenu {
+	case MainMenu:
+		return len(m.MainOptions)
+	case ScanMenu:
+		return len(m.ScanResults)
+	case PairedMenu:
+		return len(m.PairedDevices)
+	default:
+		return 0
+	}
+}
+
+func renderList(list []string, cursor int) string {
+	s := ""
+	for i, item := range list {
+
+		cursorView := ""
+		if i == cursor {
+			cursorView = "<"
+		}
+
+		s += fmt.Sprintf("%s %s\n", item, cursorView)
+	}
 	return s
 }
