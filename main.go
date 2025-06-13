@@ -2,9 +2,8 @@ package main
 
 import (
 	"fmt"
-	"log"
-
 	tea "github.com/charmbracelet/bubbletea"
+	"log"
 )
 
 func main() {
@@ -14,16 +13,29 @@ func main() {
 	}
 }
 
+type MenuState int
+
+const (
+	MainMenu MenuState = iota
+	ScanMenu
+	PairedMenu
+)
+
 type model struct {
-	tasks  []string
-	cursor int
-	done   map[int]struct{} // key = index of the tasks slice
+	cursor        int
+	CurrentMenu   MenuState
+	MainOptions   []string
+	ScanResults   []string
+	PairedDevices []string
 }
 
 func initialModel() model {
 	return model{
-		tasks: []string{"buy vegetables", "go to gym", "brush your teeth"},
-		done:  make(map[int]struct{}),
+		cursor:        0,
+		CurrentMenu:   MainMenu,
+		MainOptions:   []string{"Scan Devices", "Paired Connections", "Quit"},
+		ScanResults:   []string{"testres1", "testres2", "testres3"},
+		PairedDevices: []string{"paired1", "Paired2", "paired3"},
 	}
 }
 
@@ -42,7 +54,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case "j", "down":
-			if m.cursor < len(m.tasks)-1 {
+			var maxOptions int
+
+			switch m.CurrentMenu {
+
+			case MainMenu:
+				maxOptions = len(m.MainOptions)
+			case ScanMenu:
+				maxOptions = len(m.ScanResults)
+			case PairedMenu:
+				maxOptions = len(m.PairedDevices)
+			}
+			if m.cursor < maxOptions-1 {
 				m.cursor++
 			}
 
@@ -52,12 +75,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "enter":
-			_, ok := m.done[m.cursor]
-			if ok {
-				delete(m.done, m.cursor)
-			} else {
-				m.done[m.cursor] = struct{}{}
+			if m.CurrentMenu == MainMenu {
+
+				switch m.MainOptions[m.cursor]{
+			
+				case "Scan Devices":
+					m.CurrentMenu = ScanMenu
+				case "Paired Connections":
+					m.CurrentMenu = PairedMenu
+				}
 			}
+			// _, ok := m.done[m.cursor]
+			// if ok {
+			// 	delete(m.done, m.cursor)
+			// } else {
+			// 	m.done[m.cursor] = struct{}{}
+			// }
 		}
 
 	}
@@ -66,21 +99,39 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	// the header
-	s := "Welcome to the todo list app\n\n"
+	s := "Blueman\n\n"
 
-	// the tasks
-	for i, task := range m.tasks {
-		cursor := ""
-		if m.cursor == i {
-			cursor = "<"
+	switch m.CurrentMenu {
+
+	case MainMenu:
+		for i, option := range m.MainOptions {
+			cursor := ""
+			if m.cursor == i {
+				cursor = "<"
+			}
+
+			s += fmt.Sprintf("%s %s\n", option, cursor)
 		}
 
-		checked := " "
-		if _, ok := m.done[i]; ok {
-			checked = "x"
+	case ScanMenu:
+		for i, option := range m.ScanResults {
+			cursor := ""
+			if m.cursor == i {
+				cursor = "<"
+			}
+
+			s += fmt.Sprintf("%s %s\n", option, cursor)
+		}
+	case PairedMenu:
+		for i, option := range m.PairedDevices {
+			cursor := ""
+			if m.cursor == i {
+				cursor = "<"
+			}
+
+			s += fmt.Sprintf("%s %s\n", option, cursor)
 		}
 
-		s += fmt.Sprintf("[%s] %s %s\n", checked, task, cursor)
 	}
 
 	// footer
