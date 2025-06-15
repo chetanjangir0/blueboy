@@ -54,7 +54,7 @@ func initialModel() model {
 
 func (m model) Init() tea.Cmd {
 	// the backend for this program is bluetoothctl
-	_, err := exec.Command("which bluetoothctl").CombinedOutput()
+	_, err := exec.LookPath("bluetoothctl")
 	if err != nil {
 		log.Fatal("Error: ", err)
 	}
@@ -162,10 +162,10 @@ func renderList(list []string, cursor int) string {
 
 func getPairedDevices() []string {
 	log.Println("fetching paired devices")
-	devices, err := exec.Command("bluetoothctl paired-devices").CombinedOutput()
+	devices, err := exec.Command("bluetoothctl", "paired-devices").CombinedOutput()
 	if err != nil {
 		log.Println("Error: ", err)
-		return nil 
+		return nil
 	}
 	log.Println(string(devices))
 	return strings.Split(string(devices), "\n")

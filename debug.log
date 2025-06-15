@@ -1,1 +1,4 @@
-2025/06/15 18:53:56 Error: exec: "which bluetoothctl": executable file not found in $PATH
+2025/06/15 19:01:50 bluetoothctl is available
+2025/06/15 19:01:51 fetching paired devices
+2025/06/15 19:01:51 Device 98:47:44:15:9D:6A realme Buds Wireless 3
+
