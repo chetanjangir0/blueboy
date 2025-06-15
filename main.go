@@ -2,11 +2,24 @@ package main
 
 import (
 	"fmt"
-	tea "github.com/charmbracelet/bubbletea"
 	"log"
+	"os"
+	"os/exec"
+	"strings"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 func main() {
+	// debug file
+	f, err := os.Create("debug.log")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	log.SetOutput(f)
+	// log.SetFlags(log.LstdFlags | log.Lshortfile) // optional: adds timestamps + file:line
+
 	program := tea.NewProgram(initialModel())
 	if _, err := program.Run(); err != nil {
 		log.Fatal(err)
@@ -73,7 +86,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.CurrentMenu = PairedMenu
 				}
 				m.cursor = 0 // reset cursor pos
+
 			}
+		case "b", "esc":
+			// out, err := exec.Command("ls").CombinedOutput()
+			// if err != nil {
+			// 	log.Print("Error", err)
+			//
+			// }
+			// items := strings.Split(string(out), "\n")
+			// for _, item := range items {
+			// 	log.Println(item)
+			// }
+			m.CurrentMenu = MainMenu
 		}
 
 	}
@@ -96,7 +121,7 @@ func (m model) View() string {
 	}
 
 	// footer
-	s += "\npress q to quit.\n"
+	s += "\nq: Quit, b/esc: Main menu.\n"
 
 	return s
 }
