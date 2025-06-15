@@ -1,5 +1,1 @@
-2025/06/15 18:18:07 debug.log
-2025/06/15 18:18:07 go.mod
-2025/06/15 18:18:07 go.sum
-2025/06/15 18:18:07 main.go
-2025/06/15 18:18:07 
+2025/06/15 18:53:56 Error: exec: "which bluetoothctl": executable file not found in $PATH

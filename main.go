@@ -48,11 +48,17 @@ func initialModel() model {
 		CurrentMenu:   MainMenu,
 		MainOptions:   []string{"Scan Devices", "Paired Connections"},
 		ScanResults:   []string{"testres1", "testres2", "testres3"},
-		PairedDevices: []string{"paired1", "Paired2", "paired3"},
+		PairedDevices: []string{},
 	}
 }
 
 func (m model) Init() tea.Cmd {
+	// the backend for this program is bluetoothctl
+	_, err := exec.Command("which bluetoothctl").CombinedOutput()
+	if err != nil {
+		log.Fatal("Error: ", err)
+	}
+	log.Println("bluetoothctl is available")
 	return nil
 }
 
@@ -83,21 +89,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				case "Scan Devices":
 					m.CurrentMenu = ScanMenu
 				case "Paired Connections":
+					m.PairedDevices = getPairedDevices()
 					m.CurrentMenu = PairedMenu
 				}
 				m.cursor = 0 // reset cursor pos
 
 			}
 		case "b", "esc":
-			// out, err := exec.Command("ls").CombinedOutput()
-			// if err != nil {
-			// 	log.Print("Error", err)
+			// 	out, err := exec.Command("pd").CombinedOutput()
+			// 	if err != nil {
+			// 		log.Print("Error: ", err)
 			//
-			// }
-			// items := strings.Split(string(out), "\n")
-			// for _, item := range items {
-			// 	log.Println(item)
-			// }
+			// 	}
+			// 	items := strings.Split(string(out), "\n")
+			// 	for _, item := range items {
+			// 		log.Println(item)
+			// 	}
 			m.CurrentMenu = MainMenu
 		}
 
@@ -151,4 +158,15 @@ func renderList(list []string, cursor int) string {
 		s += fmt.Sprintf("%s %s\n", item, cursorView)
 	}
 	return s
+}
+
+func getPairedDevices() []string {
+	log.Println("fetching paired devices")
+	devices, err := exec.Command("bluetoothctl paired-devices").CombinedOutput()
+	if err != nil {
+		log.Println("Error: ", err)
+		return nil 
+	}
+	log.Println(string(devices))
+	return strings.Split(string(devices), "\n")
 }
