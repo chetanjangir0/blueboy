@@ -151,7 +151,7 @@ func (m model) itemCount() int {
 	}
 }
 
-func renderList(list []string, cursor int) string {
+func renderList[T string | Device](list []T, cursor int) string {
 	s := ""
 	for i, item := range list {
 
@@ -160,12 +160,19 @@ func renderList(list []string, cursor int) string {
 			cursorView = "<"
 		}
 
-		s += fmt.Sprintf("%s %s\n", item, cursorView)
+		switch v := any(item).(type) {
+		case string:
+			s += fmt.Sprintf("%s %s\n", v, cursorView)
+		case Device:
+			s += fmt.Sprintf("%s %s\n", v.DeviceName, cursorView)
+
+		}
+
 	}
 	return s
 }
 
-func getPairedDevices() []Device{
+func getPairedDevices() []Device {
 	log.Println("fetching paired devices")
 	output, err := exec.Command("bluetoothctl", "paired-devices").CombinedOutput()
 	if err != nil {
@@ -183,7 +190,7 @@ func getPairedDevices() []Device{
 			MacAddress: deviceInfo[1],
 			DeviceName: deviceInfo[2],
 		}
-	}	
+	}
 	return devices
 
 }
