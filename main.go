@@ -18,7 +18,8 @@ func main() {
 	}
 	defer f.Close()
 	log.SetOutput(f)
-	// log.SetFlags(log.LstdFlags | log.Lshortfile) // optional: adds timestamps + file:line
+	// optional: adds timestamps + file:line
+	// log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	program := tea.NewProgram(initialModel())
 	if _, err := program.Run(); err != nil {
@@ -92,6 +93,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				switch m.MainOptions[m.cursor] {
 				case "Scan Devices":
+					m.ScanResults = getScanResults()
 					m.CurrentMenu = ScanMenu
 				case "Paired Connections":
 					m.PairedDevices = getPairedDevices()
@@ -101,15 +103,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			}
 		case "b", "esc":
-			// 	out, err := exec.Command("pd").CombinedOutput()
-			// 	if err != nil {
-			// 		log.Print("Error: ", err)
-			//
-			// 	}
-			// 	items := strings.Split(string(out), "\n")
-			// 	for _, item := range items {
-			// 		log.Println(item)
-			// 	}
 			m.CurrentMenu = MainMenu
 		}
 
@@ -180,6 +173,38 @@ func getPairedDevices() []Device {
 		return nil
 	}
 	outputString := strings.Trim(string(output), "\n")
+	log.Println(outputString)
+	outputStringSlice := strings.Split(outputString, "\n")
+
+	var devices = make([]Device, len(outputStringSlice))
+	for i, d := range outputStringSlice {
+		deviceInfo := strings.SplitN(d, " ", 3) // "Device <Mac address> <device name>"
+		devices[i] = Device{
+			MacAddress: deviceInfo[1],
+			DeviceName: deviceInfo[2],
+		}
+	}
+	return devices
+
+}
+
+
+func getScanResults() []Device {
+	exec.Command("bluetoothctl","power", "on") 
+	exec.Command("bluetoothctl","power", "on") 
+	exec.Command("bluetoothctl","agent", "on") 
+	exec.Command("bluetoothctl","default-agent") 
+	_, err := exec.Command("bluetoothctl","scan", "on").CombinedOutput()
+	if err != nil {
+		log.Println("Error: scan err", err)
+		return nil
+	}
+	output2,err := exec.Command("bluetoothctl","devices").CombinedOutput()
+	if err != nil {
+		log.Println("Error: devices err", err)
+		return nil
+	}
+	outputString := strings.Trim(string(output2), "\n")
 	log.Println(outputString)
 	outputStringSlice := strings.Split(outputString, "\n")
 
