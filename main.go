@@ -28,6 +28,11 @@ func main() {
 
 type MenuState int
 
+type Device struct {
+	MacAddress string
+	DeviceName string
+}
+
 const (
 	MainMenu MenuState = iota
 	ScanMenu
@@ -38,8 +43,8 @@ type model struct {
 	cursor        int
 	CurrentMenu   MenuState
 	MainOptions   []string
-	ScanResults   []string
-	PairedDevices []string
+	ScanResults   []Device
+	PairedDevices []Device
 }
 
 func initialModel() model {
@@ -47,8 +52,8 @@ func initialModel() model {
 		cursor:        0,
 		CurrentMenu:   MainMenu,
 		MainOptions:   []string{"Scan Devices", "Paired Connections"},
-		ScanResults:   []string{"testres1", "testres2", "testres3"},
-		PairedDevices: []string{},
+		ScanResults:   []Device{},
+		PairedDevices: []Device{},
 	}
 }
 
@@ -160,13 +165,25 @@ func renderList(list []string, cursor int) string {
 	return s
 }
 
-func getPairedDevices() []string {
+func getPairedDevices() []Device{
 	log.Println("fetching paired devices")
-	devices, err := exec.Command("bluetoothctl", "paired-devices").CombinedOutput()
+	output, err := exec.Command("bluetoothctl", "paired-devices").CombinedOutput()
 	if err != nil {
 		log.Println("Error: ", err)
 		return nil
 	}
-	log.Println(string(devices))
-	return strings.Split(string(devices), "\n")
+	outputString := strings.Trim(string(output), "\n")
+	log.Println(outputString)
+	outputStringSlice := strings.Split(outputString, "\n")
+
+	var devices = make([]Device, len(outputStringSlice))
+	for i, d := range outputStringSlice {
+		deviceInfo := strings.SplitN(d, " ", 3) // "Device <Mac address> <device name>"
+		devices[i] = Device{
+			MacAddress: deviceInfo[1],
+			DeviceName: deviceInfo[2],
+		}
+	}	
+	return devices
+
 }
