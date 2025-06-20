@@ -90,18 +90,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "enter":
 			if m.CurrentMenu == MainMenu {
+				handleMainMenu(&m)
 
-				switch m.MainOptions[m.cursor] {
-				case "Scan Devices":
-					m.ScanResults = getScanResults()
-					m.CurrentMenu = ScanMenu
-				case "Paired Connections":
-					m.PairedDevices = getPairedDevices()
-					m.CurrentMenu = PairedMenu
-				}
-				m.cursor = 0 // reset cursor pos
-
-			}
+			}else if (m.CurrentMenu == PairedMenu) {
+				connectDevice(m.PairedDevices[m.cursor].MacAddress)
+				
+			}	 
 		case "b", "esc":
 			m.CurrentMenu = MainMenu
 		}
@@ -188,18 +182,17 @@ func getPairedDevices() []Device {
 
 }
 
-
 func getScanResults() []Device {
-	exec.Command("bluetoothctl","power", "on") 
-	exec.Command("bluetoothctl","power", "on") 
-	exec.Command("bluetoothctl","agent", "on") 
-	exec.Command("bluetoothctl","default-agent") 
-	_, err := exec.Command("bluetoothctl","scan", "on").CombinedOutput()
+	exec.Command("bluetoothctl", "power", "on")
+	exec.Command("bluetoothctl", "power", "on")
+	exec.Command("bluetoothctl", "agent", "on")
+	exec.Command("bluetoothctl", "default-agent")
+	_, err := exec.Command("bluetoothctl", "scan", "on").CombinedOutput()
 	if err != nil {
 		log.Println("Error: scan err", err)
 		return nil
 	}
-	output2,err := exec.Command("bluetoothctl","devices").CombinedOutput()
+	output2, err := exec.Command("bluetoothctl", "devices").CombinedOutput()
 	if err != nil {
 		log.Println("Error: devices err", err)
 		return nil
@@ -218,4 +211,25 @@ func getScanResults() []Device {
 	}
 	return devices
 
+}
+
+func handleMainMenu(m *model) {
+	switch m.MainOptions[m.cursor] {
+	case "Scan Devices":
+		m.ScanResults = getScanResults()
+		m.CurrentMenu = ScanMenu
+	case "Paired Connections":
+		m.PairedDevices = getPairedDevices()
+		m.CurrentMenu = PairedMenu
+	}
+	m.cursor = 0 // reset cursor pos
+}
+
+func connectDevice(MAC string) {
+	log.Printf("attempting to connect to %v\n", MAC)
+	_, err := exec.Command("bluetoothctl", "connect", MAC).CombinedOutput()
+	if err != nil {
+		log.Println("Error while connecting:", err)
+	}
+	log.Println("connected succefully")
 }

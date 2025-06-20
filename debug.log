@@ -1,6 +1,15 @@
-2025/06/16 17:42:53 bluetoothctl is available
-2025/06/16 17:42:55 Error: scan err exec: "scan": executable file not found in $PATH
-2025/06/16 17:42:58 fetching paired devices
-2025/06/16 17:42:58 Device 98:47:44:15:9D:6A realme Buds Wireless 3
-Device 14:99:3E:74:D6:90 POCO X5 Pro 5G
-2025/06/16 17:43:00 Error: scan err exec: "scan": executable file not found in $PATH
+2025/06/20 08:54:00 bluetoothctl is available
+2025/06/20 08:54:01 fetching paired devices
+2025/06/20 08:54:01 Device 14:99:3E:74:D6:90 POCO X5 Pro 5G
+Device 98:47:44:15:9D:6A realme Buds Wireless 3
+2025/06/20 08:54:02 attempting to connect to 98:47:44:15:9D:6A
+2025/06/20 08:54:06 connected succefully
+2025/06/20 08:54:06 attempting to connect to 98:47:44:15:9D:6A
+2025/06/20 08:54:06 Error while connecting: exit status 1
+2025/06/20 08:54:06 connected succefully
+2025/06/20 08:54:06 attempting to connect to 98:47:44:15:9D:6A
+2025/06/20 08:54:06 Error while connecting: exit status 1
+2025/06/20 08:54:06 connected succefully
+2025/06/20 08:54:06 attempting to connect to 98:47:44:15:9D:6A
+2025/06/20 08:54:06 Error while connecting: exit status 1
+2025/06/20 08:54:06 connected succefully
