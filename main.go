@@ -30,8 +30,8 @@ func main() {
 type MenuState int
 
 type Device struct {
-	MacAddress string
-	DeviceName string
+	Name string
+	Type string
 }
 
 const (
@@ -60,7 +60,7 @@ func initialModel() model {
 
 func (m model) Init() tea.Cmd {
 	// the backend for this program is bluetoothctl
-	_, err := exec.LookPath("bluetoothctl")
+	_, err := exec.LookPath("nmcli")
 	if err != nil {
 		log.Fatal("Error: ", err)
 	}
@@ -93,7 +93,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				handleMainMenu(&m)
 
 			}else if (m.CurrentMenu == PairedMenu) {
-				connectDevice(m.PairedDevices[m.cursor].MacAddress)
+				connectDevice(m.PairedDevices[m.cursor].Name)
 				
 			}	 
 		case "b", "esc":
@@ -151,7 +151,7 @@ func renderList[T string | Device](list []T, cursor int) string {
 		case string:
 			s += fmt.Sprintf("%s %s\n", v, cursorView)
 		case Device:
-			s += fmt.Sprintf("%s %s\n", v.DeviceName, cursorView)
+			s += fmt.Sprintf("%s %s\n", v.Type, cursorView)
 
 		}
 
@@ -160,8 +160,8 @@ func renderList[T string | Device](list []T, cursor int) string {
 }
 
 func getPairedDevices() []Device {
-	log.Println("fetching paired devices")
-	output, err := exec.Command("bluetoothctl", "paired-devices").CombinedOutput()
+	log.Println("fetching remembered devices")
+	output, err := exec.Command("nmcli", "-t", "-f", "NAME,TYPE", "connection", "show").CombinedOutput()
 	if err != nil {
 		log.Println("Error: ", err)
 		return nil
@@ -172,10 +172,13 @@ func getPairedDevices() []Device {
 
 	var devices = make([]Device, len(outputStringSlice))
 	for i, d := range outputStringSlice {
-		deviceInfo := strings.SplitN(d, " ", 3) // "Device <Mac address> <device name>"
+		deviceInfo := strings.Split(d, ":") // "Device <name> <type>"
+		if len(deviceInfo) != 2 {
+			log.Println("unexpected number of fields")
+		}
 		devices[i] = Device{
-			MacAddress: deviceInfo[1],
-			DeviceName: deviceInfo[2],
+			Name: deviceInfo[0],
+			Type: deviceInfo[1],
 		}
 	}
 	return devices
@@ -205,8 +208,8 @@ func getScanResults() []Device {
 	for i, d := range outputStringSlice {
 		deviceInfo := strings.SplitN(d, " ", 3) // "Device <Mac address> <device name>"
 		devices[i] = Device{
-			MacAddress: deviceInfo[1],
-			DeviceName: deviceInfo[2],
+			Name: deviceInfo[1],
+			Type: deviceInfo[2],
 		}
 	}
 	return devices
