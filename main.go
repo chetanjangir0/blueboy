@@ -1,5 +1,8 @@
 package main
 
+//todo
+// wifi on off function
+
 import (
 	"fmt"
 	"log"
@@ -92,10 +95,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.CurrentMenu == MainMenu {
 				handleMainMenu(&m)
 
-			}else if (m.CurrentMenu == PairedMenu) {
+			} else if m.CurrentMenu == PairedMenu {
 				connectDevice(m.PairedDevices[m.cursor].Name)
-				
-			}	 
+
+			}
 		case "b", "esc":
 			m.CurrentMenu = MainMenu
 		}
@@ -151,7 +154,7 @@ func renderList[T string | Device](list []T, cursor int) string {
 		case string:
 			s += fmt.Sprintf("%s %s\n", v, cursorView)
 		case Device:
-			s += fmt.Sprintf("%s %s\n", v.Type, cursorView)
+			s += fmt.Sprintf("%s %s %s\n", v.Name, v.Type, cursorView)
 
 		}
 
@@ -175,6 +178,7 @@ func getPairedDevices() []Device {
 		deviceInfo := strings.Split(d, ":") // "Device <name> <type>"
 		if len(deviceInfo) != 2 {
 			log.Println("unexpected number of fields")
+			return nil
 		}
 		devices[i] = Device{
 			Name: deviceInfo[0],
@@ -228,11 +232,12 @@ func handleMainMenu(m *model) {
 	m.cursor = 0 // reset cursor pos
 }
 
-func connectDevice(MAC string) {
-	log.Printf("attempting to connect to %v\n", MAC)
-	_, err := exec.Command("bluetoothctl", "connect", MAC).CombinedOutput()
+func connectDevice(deviceName string) {
+	log.Printf("attempting to connect to %v\n", deviceName)
+	_, err := exec.Command("nmcli", "connection", "up", deviceName).CombinedOutput()
 	if err != nil {
 		log.Println("Error while connecting:", err)
+		return
 	}
 	log.Println("connected succefully")
 }
