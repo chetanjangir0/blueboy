@@ -2,6 +2,7 @@ package main
 
 //todo
 // wifi on off function
+// use uuid instead of name to connect
 
 import (
 	"fmt"
@@ -49,6 +50,11 @@ type model struct {
 	MainOptions   []string
 	ScanResults   []Device
 	PairedDevices []Device
+}
+
+type nmcliMsg struct {
+	status string
+	output string
 }
 
 func initialModel() model {
