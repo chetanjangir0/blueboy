@@ -3,13 +3,17 @@ package main
 //todo
 // wifi on off function
 // use uuid instead of name to connect
+// add current action status in the model and show in view
+// use ticks to update frequently
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -78,11 +82,9 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-
-	if val, ok := msg.(tea.KeyMsg); ok {
-		key := val.String()
-
-		switch key {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
 
 		case "ctrl+c", "q":
 			return m, tea.Quit
@@ -102,14 +104,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				handleMainMenu(&m)
 
 			} else if m.CurrentMenu == PairedMenu {
-				connectDevice(m.PairedDevices[m.cursor].Name)
+				log.Println("connecting")
+				return m, connectDevice(m.PairedDevices[m.cursor].Name)
 
 			}
 		case "b", "esc":
 			m.CurrentMenu = MainMenu
 		}
-
+	case nmcliMsg:
+		log.Printf("%s:%s", msg.status, msg.output)
+		return m, nil
 	}
+
 	return m, nil
 }
 
@@ -238,12 +244,18 @@ func handleMainMenu(m *model) {
 	m.cursor = 0 // reset cursor pos
 }
 
-func connectDevice(deviceName string) {
-	log.Printf("attempting to connect to %v\n", deviceName)
-	_, err := exec.Command("nmcli", "connection", "up", deviceName).CombinedOutput()
-	if err != nil {
-		log.Println("Error while connecting:", err)
-		return
+func connectDevice(deviceName string) tea.Cmd {
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		output, err := exec.CommandContext(ctx, "nmcli", "connection", "up", deviceName).CombinedOutput()
+		if ctx.Err() == context.DeadlineExceeded {
+			return nmcliMsg{status: "error", output: "connection timed out"}
+		}
+		if err != nil {
+			return nmcliMsg{status: "error", output: string(output)}
+		}
+		return nmcliMsg{status: "success", output: string(output)}
 	}
-	log.Println("connected succefully")
 }
