@@ -40,6 +40,7 @@ type MenuState int
 type Device struct {
 	Name string
 	Type string
+	UUID string
 }
 
 const (
@@ -105,7 +106,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			} else if m.CurrentMenu == PairedMenu {
 				log.Println("connecting")
-				return m, connectDevice(m.PairedDevices[m.cursor].Name)
+				return m, connectDevice(m.PairedDevices[m.cursor].UUID)
 
 			}
 		case "b", "esc":
@@ -166,7 +167,7 @@ func renderList[T string | Device](list []T, cursor int) string {
 		case string:
 			s += fmt.Sprintf("%s %s\n", v, cursorView)
 		case Device:
-			s += fmt.Sprintf("%s %s %s\n", v.Name, v.Type, cursorView)
+			s += fmt.Sprintf("%s %s\n", v.Name, cursorView)
 
 		}
 
@@ -176,7 +177,7 @@ func renderList[T string | Device](list []T, cursor int) string {
 
 func getPairedDevices() []Device {
 	log.Println("fetching remembered devices")
-	output, err := exec.Command("nmcli", "-t", "-f", "NAME,TYPE", "connection", "show").CombinedOutput()
+	output, err := exec.Command("nmcli", "-t", "-f", "NAME,TYPE,UUID", "connection", "show").CombinedOutput()
 	if err != nil {
 		log.Println("Error: ", err)
 		return nil
@@ -188,13 +189,14 @@ func getPairedDevices() []Device {
 	var devices = make([]Device, len(outputStringSlice))
 	for i, d := range outputStringSlice {
 		deviceInfo := strings.Split(d, ":") // "Device <name> <type>"
-		if len(deviceInfo) != 2 {
+		if len(deviceInfo) != 3 {
 			log.Println("unexpected number of fields")
 			return nil
 		}
 		devices[i] = Device{
 			Name: deviceInfo[0],
 			Type: deviceInfo[1],
+			UUID: deviceInfo[2],
 		}
 	}
 	return devices
@@ -244,12 +246,12 @@ func handleMainMenu(m *model) {
 	m.cursor = 0 // reset cursor pos
 }
 
-func connectDevice(deviceName string) tea.Cmd {
+func connectDevice(UUID string) tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		output, err := exec.CommandContext(ctx, "nmcli", "connection", "up", deviceName).CombinedOutput()
+		output, err := exec.CommandContext(ctx, "nmcli", "connection", "up", UUID).CombinedOutput()
 		if ctx.Err() == context.DeadlineExceeded {
 			return nmcliMsg{status: "error", output: "connection timed out"}
 		}
