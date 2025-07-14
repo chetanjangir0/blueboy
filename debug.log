@@ -1,8 +1,8 @@
-2025/07/11 08:40:16 bluetoothctl is available
-2025/07/11 08:40:18 fetching remembered devices
-2025/07/11 08:40:18 chmod:802-11-wireless:024a39c3-d7b7-4850-9dc8-6ec51477e62c
+2025/07/14 15:52:16 bluetoothctl is available
+2025/07/14 15:52:20 chmod
+2025/07/14 15:52:24 fetching remembered devices
+2025/07/14 15:52:24 chmod:802-11-wireless:024a39c3-d7b7-4850-9dc8-6ec51477e62c
+CloudflareWARP:tun:081db440-807a-416b-a43f-d704c657de33
 Lathi:802-11-wireless:8a37ae50-1fd2-44e4-a9a3-a78ac584b3fd
-POCO X5 Pro 5G Network:bluetooth:303dfc31-166f-417b-8bd9-3fc6e4f751e4
+POCO X5 Pro 5G Network:bluetooth:36f99b8c-218d-461e-9673-d70c86e18b1d
 Wired connection 1:802-3-ethernet:5da5fdcd-4afb-39b8-8e7d-9683fc8be791
-2025/07/11 08:40:19 connecting
-2025/07/11 08:40:19 success:Connection successfully activated (D-Bus active path: /org/freedesktop/NetworkManager/ActiveConnection/7)

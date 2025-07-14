@@ -2,9 +2,9 @@ package main
 
 //todo
 // wifi on off function
-// use uuid instead of name to connect
-// add current action status in the model and show in view
+// add current status(loading, success, error) in the model and show in view
 // use ticks to update frequently
+// s for scan
 
 import (
 	"context"
@@ -57,9 +57,14 @@ type model struct {
 	PairedDevices []Device
 }
 
-type nmcliMsg struct {
+type connectDeviceMsg struct {
 	status string
 	output string
+}
+
+type scanMsg struct {
+	devices []Device
+	err     error
 }
 
 func initialModel() model {
@@ -101,10 +106,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "enter":
-			if m.CurrentMenu == MainMenu {
-				handleMainMenu(&m)
+			switch m.CurrentMenu {
+			case MainMenu:
 
-			} else if m.CurrentMenu == PairedMenu {
+				switch m.MainOptions[m.cursor] {
+				case "Scan Devices":
+					m.CurrentMenu = ScanMenu
+					m.cursor = 0
+					return m, startScan()
+				case "Paired Connections":
+					m.PairedDevices = getPairedDevices()
+					m.CurrentMenu = PairedMenu
+				}
+				m.cursor = 0 // reset cursor pos
+
+			case PairedMenu:
 				log.Println("connecting")
 				return m, connectDevice(m.PairedDevices[m.cursor].UUID)
 
@@ -112,8 +128,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "b", "esc":
 			m.CurrentMenu = MainMenu
 		}
-	case nmcliMsg:
+	case connectDeviceMsg:
 		log.Printf("%s:%s", msg.status, msg.output)
+		return m, nil
+	case scanMsg:
+		if msg.err != nil {
+			log.Println("Error fetching paired devices:", msg.err)
+			return m, nil
+		}
+		m.ScanResults = msg.devices
 		return m, nil
 	}
 
@@ -203,48 +226,73 @@ func getPairedDevices() []Device {
 
 }
 
-func getScanResults() []Device {
-	exec.Command("bluetoothctl", "power", "on")
-	exec.Command("bluetoothctl", "power", "on")
-	exec.Command("bluetoothctl", "agent", "on")
-	exec.Command("bluetoothctl", "default-agent")
-	_, err := exec.Command("bluetoothctl", "scan", "on").CombinedOutput()
-	if err != nil {
-		log.Println("Error: scan err", err)
-		return nil
-	}
-	output2, err := exec.Command("bluetoothctl", "devices").CombinedOutput()
-	if err != nil {
-		log.Println("Error: devices err", err)
-		return nil
-	}
-	outputString := strings.Trim(string(output2), "\n")
-	log.Println(outputString)
-	outputStringSlice := strings.Split(outputString, "\n")
+func startScan() tea.Cmd {
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		output, err := exec.CommandContext(ctx, "nmcli", "-t", "-f", "SSID", "device", "wifi", "list").CombinedOutput()
+		if ctx.Err() == context.DeadlineExceeded {
+			return scanMsg{err: fmt.Errorf("timeout")}
 
-	var devices = make([]Device, len(outputStringSlice))
-	for i, d := range outputStringSlice {
-		deviceInfo := strings.SplitN(d, " ", 3) // "Device <Mac address> <device name>"
-		devices[i] = Device{
-			Name: deviceInfo[1],
-			Type: deviceInfo[2],
 		}
+		if err != nil {
+			return scanMsg{err: err}
+		}
+		outputString := strings.Trim(string(output), "\n")
+		log.Println(outputString)
+		outputStringSlice := strings.Split(outputString, "\n")
+
+		var devices = make([]Device, len(outputStringSlice))
+		for i, d := range outputStringSlice {
+			devices[i] = Device{
+				Name: d,
+				Type: "wifi",
+				UUID: "",
+			}
+		}
+		return scanMsg{devices: devices}
 	}
-	return devices
+	// exec.Command("bluetoothctl", "power", "on")
+	// exec.Command("bluetoothctl", "power", "on")
+	// exec.Command("bluetoothctl", "agent", "on")
+	// exec.Command("bluetoothctl", "default-agent")
+	// _, err := exec.Command("bluetoothctl", "scan", "on").CombinedOutput()
+	// if err != nil {
+	// 	log.Println("Error: scan err", err)
+	// 	return nil
+	// }
+	// output2, err := exec.Command("bluetoothctl", "devices").CombinedOutput()
+	// if err != nil {
+	// 	log.Println("Error: devices err", err)
+	// 	return nil
+	// }
+	// outputString := strings.Trim(string(output2), "\n")
+	// log.Println(outputString)
+	// outputStringSlice := strings.Split(outputString, "\n")
+	//
+	// var devices = make([]Device, len(outputStringSlice))
+	// for i, d := range outputStringSlice {
+	// 	deviceInfo := strings.SplitN(d, " ", 3) // "Device <Mac address> <device name>"
+	// 	devices[i] = Device{
+	// 		Name: deviceInfo[1],
+	// 		Type: deviceInfo[2],
+	// 	}
+	// }
+	// return devices
 
 }
 
-func handleMainMenu(m *model) {
-	switch m.MainOptions[m.cursor] {
-	case "Scan Devices":
-		m.ScanResults = getScanResults()
-		m.CurrentMenu = ScanMenu
-	case "Paired Connections":
-		m.PairedDevices = getPairedDevices()
-		m.CurrentMenu = PairedMenu
-	}
-	m.cursor = 0 // reset cursor pos
-}
+// func handleMainMenu(m *model) {
+// 	switch m.MainOptions[m.cursor] {
+// 	case "Scan Devices":
+// 		m.ScanResults = getScanResults()
+// 		m.CurrentMenu = ScanMenu
+// 	case "Paired Connections":
+// 		m.PairedDevices = getPairedDevices()
+// 		m.CurrentMenu = PairedMenu
+// 	}
+// 	m.cursor = 0 // reset cursor pos
+// }
 
 func connectDevice(UUID string) tea.Cmd {
 	return func() tea.Msg {
@@ -253,11 +301,11 @@ func connectDevice(UUID string) tea.Cmd {
 
 		output, err := exec.CommandContext(ctx, "nmcli", "connection", "up", UUID).CombinedOutput()
 		if ctx.Err() == context.DeadlineExceeded {
-			return nmcliMsg{status: "error", output: "connection timed out"}
+			return connectDeviceMsg{status: "error", output: "connection timed out"}
 		}
 		if err != nil {
-			return nmcliMsg{status: "error", output: string(output)}
+			return connectDeviceMsg{status: "error", output: string(output)}
 		}
-		return nmcliMsg{status: "success", output: string(output)}
+		return connectDeviceMsg{status: "success", output: string(output)}
 	}
 }
