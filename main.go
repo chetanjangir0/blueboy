@@ -62,11 +62,15 @@ type connectDeviceMsg struct {
 	output string
 }
 
-type scanMsg struct {
+type startScanMsg struct {
 	devices []Device
 	err     error
 }
 
+type fetchPairedMsg struct {
+	devices []Device
+	err     error
+}
 func initialModel() model {
 	return model{
 		cursor:        0,
@@ -115,8 +119,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.cursor = 0
 					return m, startScan()
 				case "Paired Connections":
-					m.PairedDevices = getPairedDevices()
 					m.CurrentMenu = PairedMenu
+					m.cursor = 0
+					return m, fetchPaired()
 				}
 				m.cursor = 0 // reset cursor pos
 
@@ -131,13 +136,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case connectDeviceMsg:
 		log.Printf("%s:%s", msg.status, msg.output)
 		return m, nil
-	case scanMsg:
+	case startScanMsg:
 		if msg.err != nil {
-			log.Println("Error fetching paired devices:", msg.err)
+			log.Println("Error scanning devices:", msg.err)
 			return m, nil
 		}
 		m.ScanResults = msg.devices
 		return m, nil
+	case fetchPairedMsg:
+		if msg.err != nil {
+			log.Println("Error fetching paired devices:", msg.err)
+			return m, nil
+		}
+		m.PairedDevices= msg.devices
+		return m, nil
+		
 	}
 
 	return m, nil
@@ -198,32 +211,37 @@ func renderList[T string | Device](list []T, cursor int) string {
 	return s
 }
 
-func getPairedDevices() []Device {
-	log.Println("fetching remembered devices")
-	output, err := exec.Command("nmcli", "-t", "-f", "NAME,TYPE,UUID", "connection", "show").CombinedOutput()
-	if err != nil {
-		log.Println("Error: ", err)
-		return nil
-	}
-	outputString := strings.Trim(string(output), "\n")
-	log.Println(outputString)
-	outputStringSlice := strings.Split(outputString, "\n")
 
-	var devices = make([]Device, len(outputStringSlice))
-	for i, d := range outputStringSlice {
-		deviceInfo := strings.Split(d, ":") // "Device <name> <type>"
-		if len(deviceInfo) != 3 {
-			log.Println("unexpected number of fields")
-			return nil
-		}
-		devices[i] = Device{
-			Name: deviceInfo[0],
-			Type: deviceInfo[1],
-			UUID: deviceInfo[2],
-		}
-	}
-	return devices
+func fetchPaired() tea.Cmd {
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
 
+		output, err := exec.CommandContext(ctx, "nmcli", "-t", "-f", "NAME,TYPE,UUID", "connection", "show").CombinedOutput()
+		if ctx.Err() == context.DeadlineExceeded {
+			return fetchPairedMsg{err: fmt.Errorf("timeout")}
+		}
+		if err != nil {
+			return fetchPairedMsg{err: err}
+		}
+		outputString := strings.Trim(string(output), "\n")
+		log.Println(outputString)
+		outputStringSlice := strings.Split(outputString, "\n")
+
+		var devices = make([]Device, len(outputStringSlice))
+		for i, d := range outputStringSlice {
+			deviceInfo := strings.Split(d, ":") // "Device <name> <type>"
+			if len(deviceInfo) != 3 {
+				return fetchPairedMsg{err: fmt.Errorf("unexpected number of fields")} 
+			}
+			devices[i] = Device{
+				Name: deviceInfo[0],
+				Type: deviceInfo[1],
+				UUID: deviceInfo[2],
+			}
+		}
+		return fetchPairedMsg{devices: devices} 
+	}
 }
 
 func startScan() tea.Cmd {
@@ -232,11 +250,11 @@ func startScan() tea.Cmd {
 		defer cancel()
 		output, err := exec.CommandContext(ctx, "nmcli", "-t", "-f", "SSID", "device", "wifi", "list").CombinedOutput()
 		if ctx.Err() == context.DeadlineExceeded {
-			return scanMsg{err: fmt.Errorf("timeout")}
+			return startScanMsg{err: fmt.Errorf("timeout")}
 
 		}
 		if err != nil {
-			return scanMsg{err: err}
+			return startScanMsg{err: err}
 		}
 		outputString := strings.Trim(string(output), "\n")
 		log.Println(outputString)
@@ -250,49 +268,10 @@ func startScan() tea.Cmd {
 				UUID: "",
 			}
 		}
-		return scanMsg{devices: devices}
+		return startScanMsg{devices: devices}
 	}
-	// exec.Command("bluetoothctl", "power", "on")
-	// exec.Command("bluetoothctl", "power", "on")
-	// exec.Command("bluetoothctl", "agent", "on")
-	// exec.Command("bluetoothctl", "default-agent")
-	// _, err := exec.Command("bluetoothctl", "scan", "on").CombinedOutput()
-	// if err != nil {
-	// 	log.Println("Error: scan err", err)
-	// 	return nil
-	// }
-	// output2, err := exec.Command("bluetoothctl", "devices").CombinedOutput()
-	// if err != nil {
-	// 	log.Println("Error: devices err", err)
-	// 	return nil
-	// }
-	// outputString := strings.Trim(string(output2), "\n")
-	// log.Println(outputString)
-	// outputStringSlice := strings.Split(outputString, "\n")
-	//
-	// var devices = make([]Device, len(outputStringSlice))
-	// for i, d := range outputStringSlice {
-	// 	deviceInfo := strings.SplitN(d, " ", 3) // "Device <Mac address> <device name>"
-	// 	devices[i] = Device{
-	// 		Name: deviceInfo[1],
-	// 		Type: deviceInfo[2],
-	// 	}
-	// }
-	// return devices
 
 }
-
-// func handleMainMenu(m *model) {
-// 	switch m.MainOptions[m.cursor] {
-// 	case "Scan Devices":
-// 		m.ScanResults = getScanResults()
-// 		m.CurrentMenu = ScanMenu
-// 	case "Paired Connections":
-// 		m.PairedDevices = getPairedDevices()
-// 		m.CurrentMenu = PairedMenu
-// 	}
-// 	m.cursor = 0 // reset cursor pos
-// }
 
 func connectDevice(UUID string) tea.Cmd {
 	return func() tea.Msg {
