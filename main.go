@@ -55,11 +55,12 @@ type model struct {
 	MainOptions   []string
 	ScanResults   []Device
 	PairedDevices []Device
+	status        string
 }
 
 type connectDeviceMsg struct {
-	status string
 	output string
+	err error 
 }
 
 type startScanMsg struct {
@@ -71,6 +72,7 @@ type fetchPairedMsg struct {
 	devices []Device
 	err     error
 }
+
 func initialModel() model {
 	return model{
 		cursor:        0,
@@ -117,6 +119,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				case "Scan Devices":
 					m.CurrentMenu = ScanMenu
 					m.cursor = 0
+					m.status = "fetching devices..."
 					return m, startScan()
 				case "Paired Connections":
 					m.CurrentMenu = PairedMenu
@@ -127,6 +130,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			case PairedMenu:
 				log.Println("connecting")
+				m.status = "connecting..."
 				return m, connectDevice(m.PairedDevices[m.cursor].UUID)
 
 			}
@@ -134,23 +138,30 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.CurrentMenu = MainMenu
 		}
 	case connectDeviceMsg:
-		log.Printf("%s:%s", msg.status, msg.output)
+		if msg.err != nil {
+			log.Println("Error connecting:", msg.err)
+			m.status = msg.err.Error()
+			return m, nil
+		}
+		m.status = msg.output 
 		return m, nil
 	case startScanMsg:
 		if msg.err != nil {
 			log.Println("Error scanning devices:", msg.err)
+			m.status = msg.err.Error()
 			return m, nil
 		}
 		m.ScanResults = msg.devices
+		m.status = ""
 		return m, nil
 	case fetchPairedMsg:
 		if msg.err != nil {
 			log.Println("Error fetching paired devices:", msg.err)
 			return m, nil
 		}
-		m.PairedDevices= msg.devices
+		m.PairedDevices = msg.devices
 		return m, nil
-		
+
 	}
 
 	return m, nil
@@ -170,6 +181,9 @@ func (m model) View() string {
 		s += "Paired Devices\n" + renderList(m.PairedDevices, m.cursor)
 
 	}
+
+	//status
+	s += "\n" + m.status + "\n"
 
 	// footer
 	s += "\nq: Quit, b/esc: Main menu.\n"
@@ -211,7 +225,6 @@ func renderList[T string | Device](list []T, cursor int) string {
 	return s
 }
 
-
 func fetchPaired() tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -232,7 +245,7 @@ func fetchPaired() tea.Cmd {
 		for i, d := range outputStringSlice {
 			deviceInfo := strings.Split(d, ":") // "Device <name> <type>"
 			if len(deviceInfo) != 3 {
-				return fetchPairedMsg{err: fmt.Errorf("unexpected number of fields")} 
+				return fetchPairedMsg{err: fmt.Errorf("unexpected number of fields")}
 			}
 			devices[i] = Device{
 				Name: deviceInfo[0],
@@ -240,7 +253,7 @@ func fetchPaired() tea.Cmd {
 				UUID: deviceInfo[2],
 			}
 		}
-		return fetchPairedMsg{devices: devices} 
+		return fetchPairedMsg{devices: devices}
 	}
 }
 
@@ -250,7 +263,7 @@ func startScan() tea.Cmd {
 		defer cancel()
 		output, err := exec.CommandContext(ctx, "nmcli", "-t", "-f", "SSID", "device", "wifi", "list").CombinedOutput()
 		if ctx.Err() == context.DeadlineExceeded {
-			return startScanMsg{err: fmt.Errorf("timeout")}
+			return startScanMsg{err: fmt.Errorf("Error: connection timed out")}
 
 		}
 		if err != nil {
@@ -278,13 +291,13 @@ func connectDevice(UUID string) tea.Cmd {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		output, err := exec.CommandContext(ctx, "nmcli", "connection", "up", UUID).CombinedOutput()
+		_, err := exec.CommandContext(ctx, "nmcli", "connection", "up", UUID).CombinedOutput()
 		if ctx.Err() == context.DeadlineExceeded {
-			return connectDeviceMsg{status: "error", output: "connection timed out"}
+			return connectDeviceMsg{err: fmt.Errorf("Error: connection timed out")}
 		}
 		if err != nil {
-			return connectDeviceMsg{status: "error", output: string(output)}
+			return connectDeviceMsg{err: fmt.Errorf("Error: connection timed out")}
 		}
-		return connectDeviceMsg{status: "success", output: string(output)}
+		return connectDeviceMsg{output: "connection successfully activated"}
 	}
 }
