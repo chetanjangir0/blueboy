@@ -136,6 +136,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "b", "esc":
 			m.CurrentMenu = MainMenu
+			m.cursor = 0
+			return m, nil
 		}
 	case connectDeviceMsg:
 		if msg.err != nil {
