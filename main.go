@@ -2,7 +2,6 @@ package main
 
 //todo
 // wifi on off function
-// add current status(loading, success, error) in the model and show in view
 // use ticks to update frequently
 // s for scan
 
@@ -38,9 +37,10 @@ func main() {
 type MenuState int
 
 type Device struct {
-	Name string
-	Type string
-	UUID string
+	Name     string
+	Type     string
+	UUID     string
+	Security string
 }
 
 const (
@@ -60,7 +60,7 @@ type model struct {
 
 type connectDeviceMsg struct {
 	output string
-	err error 
+	err    error
 }
 
 type startScanMsg struct {
@@ -137,6 +137,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "b", "esc":
 			m.CurrentMenu = MainMenu
 			m.cursor = 0
+			m.status = ""
 			return m, nil
 		}
 	case connectDeviceMsg:
@@ -145,7 +146,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.status = msg.err.Error()
 			return m, nil
 		}
-		m.status = msg.output 
+		m.status = msg.output
 		return m, nil
 	case startScanMsg:
 		if msg.err != nil {
@@ -263,7 +264,7 @@ func startScan() tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
-		output, err := exec.CommandContext(ctx, "nmcli", "-t", "-f", "SSID", "device", "wifi", "list").CombinedOutput()
+		output, err := exec.CommandContext(ctx, "nmcli", "-t", "-f", "SSID,SECURITY", "device", "wifi", "list").CombinedOutput()
 		if ctx.Err() == context.DeadlineExceeded {
 			return startScanMsg{err: fmt.Errorf("Error: connection timed out")}
 
@@ -277,10 +278,11 @@ func startScan() tea.Cmd {
 
 		var devices = make([]Device, len(outputStringSlice))
 		for i, d := range outputStringSlice {
+			deviceInfo := strings.Split(d, ":")
 			devices[i] = Device{
-				Name: d,
+				Name: deviceInfo[0],
 				Type: "wifi",
-				UUID: "",
+				Security: deviceInfo[1],
 			}
 		}
 		return startScanMsg{devices: devices}
@@ -303,3 +305,5 @@ func connectDevice(UUID string) tea.Cmd {
 		return connectDeviceMsg{output: "connection successfully activated"}
 	}
 }
+
+func pairNewDevice(name string, password string) {}
