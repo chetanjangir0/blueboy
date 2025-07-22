@@ -8,13 +8,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/charmbracelet/bubbles/textinput"
+	tea "github.com/charmbracelet/bubbletea"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
-
-	tea "github.com/charmbracelet/bubbletea"
 )
 
 func main() {
@@ -43,6 +43,12 @@ type Device struct {
 	Security string
 }
 
+type Password struct {
+	state         string // normal asking processing
+	passwordInput textinput.Model
+	status        string
+}
+
 const (
 	MainMenu MenuState = iota
 	ScanMenu
@@ -56,6 +62,7 @@ type model struct {
 	ScanResults   []Device
 	PairedDevices []Device
 	status        string
+	password      Password // new connection password
 }
 
 type connectDeviceMsg struct {
@@ -74,12 +81,20 @@ type fetchPairedMsg struct {
 }
 
 func initialModel() model {
+	ti := textinput.New()
+	ti.Placeholder = "Enter password"
+	ti.CharLimit = 20
+	ti.Width = 30
+	ti.EchoMode = textinput.EchoPassword
+	ti.EchoCharacter = '•'
+
 	return model{
 		cursor:        0,
 		CurrentMenu:   MainMenu,
 		MainOptions:   []string{"Scan Devices", "Paired Connections"},
 		ScanResults:   []Device{},
 		PairedDevices: []Device{},
+		password:      Password{state: "normal", passwordInput: ti, status: "Press 'y' to ask for password, Ctrl+C to quit."},
 	}
 }
 
