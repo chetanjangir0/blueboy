@@ -280,8 +280,8 @@ func startScan() tea.Cmd {
 		for i, d := range outputStringSlice {
 			deviceInfo := strings.Split(d, ":")
 			devices[i] = Device{
-				Name: deviceInfo[0],
-				Type: "wifi",
+				Name:     deviceInfo[0],
+				Type:     "wifi",
 				Security: deviceInfo[1],
 			}
 		}
@@ -306,4 +306,17 @@ func connectDevice(UUID string) tea.Cmd {
 	}
 }
 
-func pairNewDevice(name string, password string) {}
+func pairNewDevice(newDevice Device, password string) tea.Cmd {
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		_, err := exec.CommandContext(ctx, "nmcli", "device", "wifi", "connect", newDevice.Name, password).CombinedOutput()
+		if ctx.Err() == context.DeadlineExceeded {
+			return connectDeviceMsg{err: fmt.Errorf("Error: connection timed out")}
+		}
+		if err != nil {
+			return connectDeviceMsg{err: fmt.Errorf("Error: connection timed out")}
+		}
+		return connectDeviceMsg{output: "connection successfully activated"}
+	}
+}
