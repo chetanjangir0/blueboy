@@ -300,6 +300,14 @@ func startScan() tea.Cmd {
 		var devices = make([]Device, len(outputStringSlice))
 		for i, d := range outputStringSlice {
 			deviceInfo := strings.Split(d, ":")
+
+			if len(deviceInfo) == 0 { // if there is no ssid/name
+				deviceInfo = append(deviceInfo, " ")
+				deviceInfo = append(deviceInfo, " ")
+			}else if len(deviceInfo) == 1{ // if there is no security
+				deviceInfo = append(deviceInfo, " ")
+			}
+
 			devices[i] = Device{
 				Name:     deviceInfo[0],
 				Type:     "wifi",
