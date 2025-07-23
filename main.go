@@ -94,7 +94,7 @@ func initialModel() model {
 		MainOptions:   []string{"Scan Devices", "Paired Connections"},
 		ScanResults:   []Device{},
 		PairedDevices: []Device{},
-		password:      Password{state: "normal", passwordInput: ti, status: "Press 'y' to ask for password, Ctrl+C to quit."},
+		password:      Password{state: "normal", passwordInput: ti},
 	}
 }
 
@@ -147,7 +147,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				log.Println("connecting")
 				m.status = "connecting..."
 				return m, connectDevice(m.PairedDevices[m.cursor].UUID)
-
+			case ScanMenu:
+				log.Println("connection pairing started")
+				m.password.state = "asking" 
+				m.password.passwordInput.Reset() 
+				m.password.passwordInput.Focus()
+				m.password.status = "Please enter the password:"
+				return m, textinput.Blink 
 			}
 		case "b", "esc":
 			m.CurrentMenu = MainMenu
