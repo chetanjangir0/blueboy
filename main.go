@@ -149,11 +149,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, connectDevice(m.PairedDevices[m.cursor].UUID)
 			case ScanMenu:
 				log.Println("connection pairing started")
-				m.password.state = "asking" 
-				m.password.passwordInput.Reset() 
+				m.password.state = "asking"
+				m.password.passwordInput.Reset()
 				m.password.passwordInput.Focus()
 				m.password.status = "Please enter the password:"
-				return m, textinput.Blink 
+				return m, textinput.Blink
 			}
 		case "b", "esc":
 			m.CurrentMenu = MainMenu
@@ -188,23 +188,32 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	}
 
-	return m, nil
+	var cmd tea.Cmd
+	if m.password.state == "asking" {
+		m.password.passwordInput, cmd = m.password.passwordInput.Update(msg)
+	}
+	return m, cmd 
 }
 
 func (m model) View() string {
 	// the header
 	s := "Blueman\n\n"
+	
+	if m.password.state == "asking" {
+		s += m.password.passwordInput.View()
+	} else {
+		switch m.CurrentMenu {
 
-	switch m.CurrentMenu {
+		case MainMenu:
+			s += renderList(m.MainOptions, m.cursor)
+		case ScanMenu:
+			s += "Scan Results\n" + renderList(m.ScanResults, m.cursor)
+		case PairedMenu:
+			s += "Paired Devices\n" + renderList(m.PairedDevices, m.cursor)
 
-	case MainMenu:
-		s += renderList(m.MainOptions, m.cursor)
-	case ScanMenu:
-		s += "Scan Results\n" + renderList(m.ScanResults, m.cursor)
-	case PairedMenu:
-		s += "Paired Devices\n" + renderList(m.PairedDevices, m.cursor)
-
+		}
 	}
+
 
 	//status
 	s += "\n" + m.status + "\n"
@@ -302,9 +311,8 @@ func startScan() tea.Cmd {
 			deviceInfo := strings.Split(d, ":")
 
 			if len(deviceInfo) == 0 { // if there is no ssid/name
-				deviceInfo = append(deviceInfo, " ")
-				deviceInfo = append(deviceInfo, " ")
-			}else if len(deviceInfo) == 1{ // if there is no security
+				continue
+			} else if len(deviceInfo) == 1 { // if there is no security
 				deviceInfo = append(deviceInfo, " ")
 			}
 
