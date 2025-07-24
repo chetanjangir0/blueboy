@@ -364,7 +364,7 @@ func pairNewDevice(newDevice Device, password string) tea.Cmd {
 
 		var err error
 		if password != "" {
-			_, err = exec.CommandContext(ctx, "nmcli", "device", "wifi", "connect", newDevice.Name, password).CombinedOutput()
+			_, err = exec.CommandContext(ctx, "nmcli", "device", "wifi", "connect", newDevice.Name, "password", password).CombinedOutput()
 		} else {
 			_, err = exec.CommandContext(ctx, "nmcli", "device", "wifi", "connect", newDevice.Name).CombinedOutput()
 		}
