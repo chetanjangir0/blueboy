@@ -152,23 +152,27 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case ScanMenu:
 				log.Println("connection pairing started")
 				selectedDevice := m.ScanResults[m.cursor]
-				if m.password.state == "asking" {
-					enteredPassword := m.password.passwordInput.Value()
-					m.password.passwordInput.SetValue("") // Clear immediately
-					m.password.passwordInput.Blur()       // Remove focus
-					m.password.state = "normal"
-
-					log.Printf("Processing password: \"%s\" (length %d)...", enteredPassword, len(enteredPassword))
-					return m, pairNewDevice(selectedDevice, enteredPassword)
-				}
 				if selectedDevice.Security == "" {
+					m.status = "connecting..."
 					return m, pairNewDevice(selectedDevice, "")
 				}
-				m.password.state = "asking"
-				m.password.passwordInput.Reset()
-				m.password.passwordInput.Focus()
-				m.password.status = "This network requires a password:"
-				return m, textinput.Blink
+				if m.password.state != "asking" {
+					m.password.state = "asking"
+					m.password.passwordInput.Reset()
+					m.password.passwordInput.Focus()
+					m.status = "This network requires a password:"
+					return m, textinput.Blink
+				}
+
+				enteredPassword := m.password.passwordInput.Value()
+				m.password.passwordInput.SetValue("") // Clear immediately
+				m.password.passwordInput.Blur()       // Remove focus
+				m.password.state = "normal"
+
+				log.Printf("Processing password: \"%s\" (length %d)...", enteredPassword, len(enteredPassword))
+				m.status = "connecting..."
+				return m, pairNewDevice(selectedDevice, enteredPassword)
+
 			}
 		case "b", "esc":
 			m.CurrentMenu = MainMenu
@@ -351,7 +355,7 @@ func connectDevice(UUID string) tea.Cmd {
 			return connectDeviceMsg{err: fmt.Errorf("Error: connection timed out")}
 		}
 		if err != nil {
-			return connectDeviceMsg{err:err} 
+			return connectDeviceMsg{err: err}
 		}
 		return connectDeviceMsg{output: "connection successfully activated"}
 	}
@@ -372,7 +376,7 @@ func pairNewDevice(newDevice Device, password string) tea.Cmd {
 			return connectDeviceMsg{err: fmt.Errorf("Error: connection timed out")}
 		}
 		if err != nil {
-			return connectDeviceMsg{err: err} 
+			return connectDeviceMsg{err: err}
 		}
 		return connectDeviceMsg{output: "connection successfully activated"}
 	}
