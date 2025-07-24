@@ -1,11 +1,6 @@
-2025/07/23 11:59:22 bluetoothctl is available
-2025/07/23 11:59:23 chmod:WPA2
-2025/07/23 11:59:24 connection pairing started
-2025/07/23 11:59:30 connection pairing started
-2025/07/23 11:59:32 connection pairing started
-2025/07/23 11:59:35 connection pairing started
-2025/07/23 11:59:38 connection pairing started
-2025/07/23 12:00:10 connection pairing started
-2025/07/23 12:00:11 connection pairing started
-2025/07/23 12:00:12 connection pairing started
-2025/07/23 12:00:12 connection pairing started
+2025/07/24 14:27:42 bluetoothctl is available
+2025/07/24 14:27:45 chmod:WPA2
+2025/07/24 14:27:46 connection pairing started
+2025/07/24 14:27:48 connection pairing started
+2025/07/24 14:27:48 Processing password: "dfsdf" (length 5)...
+2025/07/24 14:27:48 Error connecting: exit status 2

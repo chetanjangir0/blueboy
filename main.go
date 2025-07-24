@@ -114,7 +114,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 
 		case "ctrl+c", "q":
-			return m, tea.Quit
+			if m.password.state != "asking" {
+				return m, tea.Quit
+			}
 
 		case "j", "down":
 			if m.cursor < m.itemCount()-1 {
@@ -149,10 +151,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, connectDevice(m.PairedDevices[m.cursor].UUID)
 			case ScanMenu:
 				log.Println("connection pairing started")
+				selectedDevice := m.ScanResults[m.cursor]
+				if m.password.state == "asking" {
+					enteredPassword := m.password.passwordInput.Value()
+					m.password.passwordInput.SetValue("") // Clear immediately
+					m.password.passwordInput.Blur()       // Remove focus
+					m.password.state = "normal"
+
+					log.Printf("Processing password: \"%s\" (length %d)...", enteredPassword, len(enteredPassword))
+					return m, pairNewDevice(selectedDevice, enteredPassword)
+				}
+				if selectedDevice.Security == "" {
+					return m, pairNewDevice(selectedDevice, "")
+				}
 				m.password.state = "asking"
 				m.password.passwordInput.Reset()
 				m.password.passwordInput.Focus()
-				m.password.status = "Please enter the password:"
+				m.password.status = "This network requires a password:"
 				return m, textinput.Blink
 			}
 		case "b", "esc":
@@ -192,13 +207,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.password.state == "asking" {
 		m.password.passwordInput, cmd = m.password.passwordInput.Update(msg)
 	}
-	return m, cmd 
+	return m, cmd
 }
 
 func (m model) View() string {
 	// the header
 	s := "Blueman\n\n"
-	
+
 	if m.password.state == "asking" {
 		s += m.password.passwordInput.View()
 	} else {
@@ -213,7 +228,6 @@ func (m model) View() string {
 
 		}
 	}
-
 
 	//status
 	s += "\n" + m.status + "\n"
@@ -337,7 +351,7 @@ func connectDevice(UUID string) tea.Cmd {
 			return connectDeviceMsg{err: fmt.Errorf("Error: connection timed out")}
 		}
 		if err != nil {
-			return connectDeviceMsg{err: fmt.Errorf("Error: connection timed out")}
+			return connectDeviceMsg{err:err} 
 		}
 		return connectDeviceMsg{output: "connection successfully activated"}
 	}
@@ -347,12 +361,18 @@ func pairNewDevice(newDevice Device, password string) tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
-		_, err := exec.CommandContext(ctx, "nmcli", "device", "wifi", "connect", newDevice.Name, password).CombinedOutput()
+
+		var err error
+		if password != "" {
+			_, err = exec.CommandContext(ctx, "nmcli", "device", "wifi", "connect", newDevice.Name, password).CombinedOutput()
+		} else {
+			_, err = exec.CommandContext(ctx, "nmcli", "device", "wifi", "connect", newDevice.Name).CombinedOutput()
+		}
 		if ctx.Err() == context.DeadlineExceeded {
 			return connectDeviceMsg{err: fmt.Errorf("Error: connection timed out")}
 		}
 		if err != nil {
-			return connectDeviceMsg{err: fmt.Errorf("Error: connection timed out")}
+			return connectDeviceMsg{err: err} 
 		}
 		return connectDeviceMsg{output: "connection successfully activated"}
 	}
