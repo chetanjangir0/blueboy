@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"log"
 	"os"
 	"os/exec"
@@ -30,7 +31,7 @@ func main() {
 	// optional: adds timestamps + file:line
 	// log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	program := tea.NewProgram(initialModel())
+	program := tea.NewProgram(initialModel(), tea.WithAltScreen())
 	if _, err := program.Run(); err != nil {
 		log.Fatal(err)
 	}
@@ -240,7 +241,7 @@ func (m model) View() string {
 	// footer
 	s += "\nq: Quit, b/esc: Main menu.\n"
 
-	return s
+	return render()
 }
 
 func (m model) itemCount() int {
@@ -381,4 +382,32 @@ func pairNewDevice(newDevice Device, password string) tea.Cmd {
 		}
 		return connectDeviceMsg{output: "connection successfully activated"}
 	}
+}
+
+var (
+	box      = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(0, 1)
+	selected = lipgloss.NewStyle().Foreground(lipgloss.Color("2")).Bold(true)
+)
+
+func render() string {
+	row1 := lipgloss.JoinHorizontal(lipgloss.Top,
+		selected.Render("> connection 1"),
+		lipgloss.NewStyle().Width(2).Render(""),
+		lipgloss.NewStyle().Render("connection 2"),
+	)
+	row2 := lipgloss.NewStyle().MarginTop(1).Render("connecting to connection 1...")
+
+	body := lipgloss.JoinVertical(lipgloss.Left,
+		lipgloss.NewStyle().Foreground(lipgloss.Color("3")).Bold(true).Render("Scan Results"),
+		row1,
+		row2,
+	)
+
+	return box.Render(
+		lipgloss.JoinVertical(lipgloss.Center,
+			lipgloss.NewStyle().Foreground(lipgloss.Color("6")).Bold(true).Align(lipgloss.Center).Render("Blueman"),
+			body,
+			lipgloss.NewStyle().MarginTop(1).Foreground(lipgloss.Color("8")).Render("q: Quit, b/esc: Main menu."),
+		),
+	)
 }
