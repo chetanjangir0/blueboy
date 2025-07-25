@@ -220,34 +220,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m model) View() string {
-	// the header
-	s := "Blueman\n\n"
-
-	if m.password.isAsking {
-		s += m.password.passwordInput.View()
-	} else {
-		switch m.CurrentMenu {
-
-		case MainMenu:
-			s += renderList(m.MainOptions, m.cursor)
-		case ScanMenu:
-			s += "Scan Results\n" + renderList(m.ScanResults, m.cursor)
-		case PairedMenu:
-			s += "Paired Devices\n" + renderList(m.PairedDevices, m.cursor)
-
-		}
-	}
-
-	//status
-	s += "\n" + m.status + "\n"
-
-	// footer
-	s += "\nq: Quit, b/esc: Main menu.\n"
-
-	return render(&m)
-}
-
 func (m model) itemCount() int {
 	switch m.CurrentMenu {
 	case MainMenu:
@@ -259,27 +231,6 @@ func (m model) itemCount() int {
 	default:
 		return 0
 	}
-}
-
-func renderList[T string | Device](list []T, cursor int) string {
-	s := ""
-	for i, item := range list {
-
-		cursorView := ""
-		if i == cursor {
-			cursorView = "<"
-		}
-
-		switch v := any(item).(type) {
-		case string:
-			s += fmt.Sprintf("%s %s\n", v, cursorView)
-		case Device:
-			s += fmt.Sprintf("%s %s\n", v.Name, cursorView)
-
-		}
-
-	}
-	return s
 }
 
 func fetchPaired() tea.Cmd {
@@ -393,27 +344,63 @@ var (
 	selected = lipgloss.NewStyle().Foreground(lipgloss.Color("2")).Bold(true)
 )
 
-func render(m *model) string {
-	row1 := lipgloss.JoinHorizontal(lipgloss.Top,
-		selected.Render("> connection 1"),
-		lipgloss.NewStyle().Width(2).Render(""),
-		lipgloss.NewStyle().Render("connection 2"),
-	)
-	row2 := lipgloss.NewStyle().MarginTop(1).Render("connecting to connection 1...")
 
+func (m model) View() string {
+	var title, main string
+
+	if m.password.isAsking {
+		title = "Enter Password"
+		main = m.password.passwordInput.View()
+	} else {
+		switch m.CurrentMenu {
+		case MainMenu:
+			title = "Blueman"
+			main = renderList(m.MainOptions, m.cursor)
+		case ScanMenu:
+			title = "Scan Results"
+			main = renderList(m.ScanResults, m.cursor)
+		case PairedMenu:
+			title = "Paired Devices"
+			main = renderList(m.PairedDevices, m.cursor)
+		}
+	}
+
+	return layoutBox(title, main, m.status, m.width, m.height)
+}
+
+func renderList[T string | Device](list []T, cursor int) string {
+	var out []string
+	for i, item := range list {
+		var line string
+		switch v := any(item).(type) {
+		case string:
+			line = v
+		case Device:
+			line = v.Name
+		}
+		if i == cursor {
+			line = lipgloss.NewStyle().Foreground(lipgloss.Color("2")).Bold(true).Render("> " + line)
+		} else {
+			line = "  " + line
+		}
+		out = append(out, line)
+	}
+	return lipgloss.JoinVertical(lipgloss.Left, out...)
+}
+
+
+func layoutBox(title, main string, status string, width, height int) string {
 	body := lipgloss.JoinVertical(lipgloss.Left,
-		lipgloss.NewStyle().Foreground(lipgloss.Color("3")).Bold(true).Render("Scan Results"),
-		row1,
-		row2,
+		lipgloss.NewStyle().Foreground(lipgloss.Color("6")).Bold(true).Render(title),
+		lipgloss.NewStyle().Render(main),
+		lipgloss.NewStyle().MarginTop(1).Render(status),
+		lipgloss.NewStyle().MarginTop(1).Foreground(lipgloss.Color("8")).Render("q: Quit, b/esc: Main menu."),
 	)
 
-	ui := box.Render(
-		lipgloss.JoinVertical(lipgloss.Center,
-			lipgloss.NewStyle().Foreground(lipgloss.Color("6")).Bold(true).Align(lipgloss.Center).Render("Blueman"),
-			body,
-			lipgloss.NewStyle().MarginTop(1).Foreground(lipgloss.Color("8")).Render("q: Quit, b/esc: Main menu."),
-		),
-	)
+	box := lipgloss.NewStyle().
+		Padding(1, 2).
+		Border(lipgloss.NormalBorder()).
+		Render(body)
 
-	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, ui)
+	return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, box)
 }
