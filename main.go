@@ -65,6 +65,8 @@ type model struct {
 	PairedDevices []Device
 	status        string
 	password      Password // new connection password
+	width         int
+	height        int
 }
 
 type connectDeviceMsg struct {
@@ -206,7 +208,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.PairedDevices = msg.devices
 		return m, nil
-
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
 	}
 
 	var cmd tea.Cmd
@@ -241,7 +245,7 @@ func (m model) View() string {
 	// footer
 	s += "\nq: Quit, b/esc: Main menu.\n"
 
-	return render()
+	return render(&m)
 }
 
 func (m model) itemCount() int {
@@ -389,7 +393,7 @@ var (
 	selected = lipgloss.NewStyle().Foreground(lipgloss.Color("2")).Bold(true)
 )
 
-func render() string {
+func render(m *model) string {
 	row1 := lipgloss.JoinHorizontal(lipgloss.Top,
 		selected.Render("> connection 1"),
 		lipgloss.NewStyle().Width(2).Render(""),
@@ -403,11 +407,13 @@ func render() string {
 		row2,
 	)
 
-	return box.Render(
+	ui := box.Render(
 		lipgloss.JoinVertical(lipgloss.Center,
 			lipgloss.NewStyle().Foreground(lipgloss.Color("6")).Bold(true).Align(lipgloss.Center).Render("Blueman"),
 			body,
 			lipgloss.NewStyle().MarginTop(1).Foreground(lipgloss.Color("8")).Render("q: Quit, b/esc: Main menu."),
 		),
 	)
+
+	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, ui)
 }
