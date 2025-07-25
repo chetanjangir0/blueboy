@@ -344,7 +344,7 @@ var (
 	selected = lipgloss.NewStyle().Foreground(lipgloss.Color("2")).Bold(true)
 )
 
-
+// UI
 func (m model) View() string {
 	var title, main string
 
@@ -388,10 +388,16 @@ func renderList[T string | Device](list []T, cursor int) string {
 	return lipgloss.JoinVertical(lipgloss.Left, out...)
 }
 
-
 func layoutBox(title, main string, status string, width, height int) string {
+	// Style for the horizontal separator
+	separator := lipgloss.NewStyle().
+		Border(lipgloss.NormalBorder(), false, false, true, false). // Only bottom border
+		Width(lipgloss.Width(title)). // Match width of the title for consistency
+		Render("")
+
 	body := lipgloss.JoinVertical(lipgloss.Left,
 		lipgloss.NewStyle().Foreground(lipgloss.Color("6")).Bold(true).Render(title),
+		separator, // Separator after the title
 		lipgloss.NewStyle().Render(main),
 		lipgloss.NewStyle().MarginTop(1).Render(status),
 		lipgloss.NewStyle().MarginTop(1).Foreground(lipgloss.Color("8")).Render("q: Quit, b/esc: Main menu."),
