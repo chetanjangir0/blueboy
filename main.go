@@ -4,6 +4,8 @@ package main
 // wifi on off function
 // use ticks to update frequently
 // s for scan
+// make it show security and network strength of devices
+// styles like loading spinner
 
 import (
 	"context"
