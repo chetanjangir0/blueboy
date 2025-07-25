@@ -1,9 +1,5 @@
-2025/07/25 14:00:18 bluetoothctl is available
-2025/07/25 14:00:24 chmod:WPA2
-2025/07/25 14:00:26 chmod:802-11-wireless:024a39c3-d7b7-4850-9dc8-6ec51477e62c
-CloudflareWARP:tun:fe5a29e6-4d34-4367-b931-a1e89bb2649f
-Lathi:802-11-wireless:8a37ae50-1fd2-44e4-a9a3-a78ac584b3fd
-POCO X5 Pro 5G Network:bluetooth:081c4888-1663-4564-85d6-b2d60c26496e
-vivo 1916:802-11-wireless:a31d7a94-6c50-4244-bdc4-2a6635dc8919
-vivo 1916 1:802-11-wireless:44d80d72-435b-440c-b9e1-188aef302998
-Wired connection 1:802-3-ethernet:5da5fdcd-4afb-39b8-8e7d-9683fc8be791
+2025/07/25 14:25:08 bluetoothctl is available
+2025/07/25 14:25:14 chmod:WPA2
+2025/07/25 14:25:15 connection pairing started
+2025/07/25 14:25:20 connection pairing started
+2025/07/25 14:25:20 Processing password: "aiypwzqp" (length 8)...

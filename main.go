@@ -46,9 +46,8 @@ type Device struct {
 }
 
 type Password struct {
-	state         string // normal asking processing
+	isAsking      bool
 	passwordInput textinput.Model
-	status        string
 }
 
 const (
@@ -96,7 +95,7 @@ func initialModel() model {
 		MainOptions:   []string{"Scan Devices", "Paired Connections"},
 		ScanResults:   []Device{},
 		PairedDevices: []Device{},
-		password:      Password{state: "normal", passwordInput: ti},
+		password:      Password{isAsking: false, passwordInput: ti},
 	}
 }
 
@@ -116,7 +115,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 
 		case "ctrl+c", "q":
-			if m.password.state != "asking" {
+			if !m.password.isAsking {
 				return m, tea.Quit
 			}
 
@@ -158,8 +157,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.status = "connecting..."
 					return m, pairNewDevice(selectedDevice, "")
 				}
-				if m.password.state != "asking" {
-					m.password.state = "asking"
+				if !m.password.isAsking {
+					m.password.isAsking = true
 					m.password.passwordInput.Reset()
 					m.password.passwordInput.Focus()
 					m.status = "This network requires a password:"
@@ -169,7 +168,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				enteredPassword := m.password.passwordInput.Value()
 				m.password.passwordInput.SetValue("") // Clear immediately
 				m.password.passwordInput.Blur()       // Remove focus
-				m.password.state = "normal"
+				m.password.isAsking = false
 
 				log.Printf("Processing password: \"%s\" (length %d)...", enteredPassword, len(enteredPassword))
 				m.status = "connecting..."
@@ -210,7 +209,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	var cmd tea.Cmd
-	if m.password.state == "asking" {
+	if m.password.isAsking {
 		m.password.passwordInput, cmd = m.password.passwordInput.Update(msg)
 	}
 	return m, cmd
@@ -220,7 +219,7 @@ func (m model) View() string {
 	// the header
 	s := "Blueman\n\n"
 
-	if m.password.state == "asking" {
+	if m.password.isAsking {
 		s += m.password.passwordInput.View()
 	} else {
 		switch m.CurrentMenu {
