@@ -389,16 +389,23 @@ func renderList[T string | Device](list []T, cursor int) string {
 }
 
 func layoutBox(title, main string, status string, width, height int) string {
-	// Style for the horizontal separator
-	separator := lipgloss.NewStyle().
-		Border(lipgloss.NormalBorder(), false, false, true, false). // Only bottom border
-		Width(lipgloss.Width(title)). // Match width of the title for consistency
-		Render("")
+	// Title styled
+	titleLine := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("6")).
+		Bold(true).
+		Render(title)
 
+	// Separator as full-width horizontal line
+	separatorWidth := lipgloss.Width(titleLine)
+	separator := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("8")).
+		Render(strings.Repeat("─", separatorWidth))
+
+	// Body composed with precise spacing
 	body := lipgloss.JoinVertical(lipgloss.Left,
-		lipgloss.NewStyle().Foreground(lipgloss.Color("6")).Bold(true).Render(title),
-		separator, // Separator after the title
-		lipgloss.NewStyle().Render(main),
+		titleLine,
+		separator,
+		main,
 		lipgloss.NewStyle().MarginTop(1).Render(status),
 		lipgloss.NewStyle().MarginTop(1).Foreground(lipgloss.Color("8")).Render("q: Quit, b/esc: Main menu."),
 	)
