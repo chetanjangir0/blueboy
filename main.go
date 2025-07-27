@@ -123,12 +123,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "j", "down":
-			if m.cursor < m.itemCount()-1 {
+			if m.cursor < m.itemCount()-1 && !m.password.isAsking {
 				m.cursor++
 			}
 
 		case "k", "up":
-			if m.cursor > 0 {
+			if m.cursor > 0 && !m.password.isAsking {
 				m.cursor--
 			}
 
@@ -182,10 +182,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			}
 		case "b", "esc":
-			m.CurrentMenu = MainMenu
-			m.cursor = 0
-			m.status = ""
-			return m, nil
+			if !m.password.isAsking {
+				m.CurrentMenu = MainMenu
+				m.cursor = 0
+				m.status = ""
+				return m, nil
+			}
 		}
 	case connectDeviceMsg:
 		if msg.err != nil {
