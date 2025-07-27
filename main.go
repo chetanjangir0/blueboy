@@ -348,7 +348,7 @@ func (m model) View() string {
 	} else {
 		switch m.CurrentMenu {
 		case MainMenu:
-			title = "Blueman"
+			title = "Blueboy"
 			main = renderList(m.MainOptions, m.cursor)
 		case ScanMenu:
 			title = "Scan Results"
