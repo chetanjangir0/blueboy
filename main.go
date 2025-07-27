@@ -155,6 +155,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, connectDevice(m.PairedDevices[m.cursor].UUID)
 			case ScanMenu:
 				log.Println("connection pairing started")
+				if m.cursor >= len(m.ScanResults) {
+					return m, nil
+				}
 				selectedDevice := m.ScanResults[m.cursor]
 				if selectedDevice.Security == "" {
 					m.status = "connecting..."
