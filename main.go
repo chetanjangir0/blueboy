@@ -14,7 +14,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"log"
-	"os"
+	// "os"
 	"os/exec"
 	"strings"
 	"time"
@@ -22,14 +22,12 @@ import (
 
 func main() {
 	// debug file
-	f, err := os.Create("debug.log")
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-	log.SetOutput(f)
-	// optional: adds timestamps + file:line
-	// log.SetFlags(log.LstdFlags | log.Lshortfile)
+	// f, err := os.Create("debug.log")
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer f.Close()
+	// log.SetOutput(f)
 
 	program := tea.NewProgram(initialModel(), tea.WithAltScreen())
 	if _, err := program.Run(); err != nil {
@@ -108,7 +106,6 @@ func (m model) Init() tea.Cmd {
 	if err != nil {
 		log.Fatal("Error: ", err)
 	}
-	log.Println("bluetoothctl is available")
 	return nil
 }
 
@@ -150,11 +147,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor = 0 // reset cursor pos
 
 			case PairedMenu:
-				log.Println("connecting")
 				m.status = "connecting..."
 				return m, connectDevice(m.PairedDevices[m.cursor].UUID)
 			case ScanMenu:
-				log.Println("connection pairing started")
 				if m.cursor >= len(m.ScanResults) {
 					return m, nil
 				}
@@ -176,7 +171,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.password.passwordInput.Blur()       // Remove focus
 				m.password.isAsking = false
 
-				log.Printf("Processing password: \"%s\" (length %d)...", enteredPassword, len(enteredPassword))
 				m.status = "connecting..."
 				return m, pairNewDevice(selectedDevice, enteredPassword)
 
@@ -191,7 +185,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case connectDeviceMsg:
 		if msg.err != nil {
-			log.Println("Error connecting:", msg.err)
 			m.status = msg.err.Error()
 			return m, nil
 		}
@@ -199,7 +192,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case startScanMsg:
 		if msg.err != nil {
-			log.Println("Error scanning devices:", msg.err)
 			m.status = msg.err.Error()
 			return m, nil
 		}
@@ -208,7 +200,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case fetchPairedMsg:
 		if msg.err != nil {
-			log.Println("Error fetching paired devices:", msg.err)
 			return m, nil
 		}
 		m.PairedDevices = msg.devices
@@ -251,7 +242,6 @@ func fetchPaired() tea.Cmd {
 			return fetchPairedMsg{err: err}
 		}
 		outputString := strings.Trim(string(output), "\n")
-		log.Println(outputString)
 		outputStringSlice := strings.Split(outputString, "\n")
 
 		var devices = make([]Device, len(outputStringSlice))
@@ -283,7 +273,6 @@ func startScan() tea.Cmd {
 			return startScanMsg{err: err}
 		}
 		outputString := strings.Trim(string(output), "\n")
-		log.Println(outputString)
 		outputStringSlice := strings.Split(outputString, "\n")
 
 		var devices = make([]Device, len(outputStringSlice))
