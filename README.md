@@ -54,13 +54,13 @@ blueboy
 ## Screenshots
 
 ### Main Menu  
-![Main Menu](screenshots/screenshot1.png)
+![Main Menu](screenshots/screenshot 1.png)
 
 ### Paired Devices Menu  
-![Paired Devices](screenshots/screenshot2.png)
+![Paired Devices](screenshots/screenshot 2.png)
 
 ### Password Input Prompt  
-![Password Input](screenshots/screenshot3.png)
+![Password Input](screenshots/screenshot 3.png)
 
 ---
 
