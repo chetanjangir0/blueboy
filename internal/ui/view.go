@@ -40,7 +40,7 @@ func renderList[T string | Device](list []T, cursor int) string {
 			line = v.Name
 		}
 		if i == cursor {
-			line = lipgloss.NewStyle().Foreground(lipgloss.Color("2")).Bold(true).Render("> " + line)
+			line = selectedStyle.Render("> " + line)
 		} else {
 			line = "  " + line
 		}
@@ -71,10 +71,5 @@ func layoutBox(title, main string, status string, width, height int) string {
 		lipgloss.NewStyle().MarginTop(1).Foreground(lipgloss.Color("8")).Render("q: Quit, b/esc: Main menu."),
 	)
 
-	box := lipgloss.NewStyle().
-		Padding(1, 2).
-		Border(lipgloss.NormalBorder()).
-		Render(body)
-
-	return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, box)
+	return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, boxStyle.Render(body))
 }
