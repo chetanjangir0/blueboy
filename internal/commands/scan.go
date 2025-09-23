@@ -6,7 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/chetanjangir0/blueboy/internal/network"
-	"github.com/chetanjangir0/blueboy/internal/ui"
+	"github.com/chetanjangir0/blueboy/internal/messages"
 )
 
 func StartScan(nm network.NetworkManager) tea.Cmd {
@@ -15,9 +15,9 @@ func StartScan(nm network.NetworkManager) tea.Cmd {
 		defer cancel()
 		devices, err := nm.ScanDevices(ctx)
 		if err != nil {
-			return ui.StartScanMsg{Err: err}
+			return messages.StartScanMsg{Err: err}
 		}
-		return ui.StartScanMsg{Devices: devices}
+		return messages.StartScanMsg{Devices: devices}
 	}
 
 }

@@ -6,7 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/chetanjangir0/blueboy/internal/network"
-	"github.com/chetanjangir0/blueboy/internal/ui"
+	"github.com/chetanjangir0/blueboy/internal/messages"
 )
 
 func pairNewDevice(newDevice network.Device, password string, nm network.NetworkManager) tea.Cmd {
@@ -16,8 +16,8 @@ func pairNewDevice(newDevice network.Device, password string, nm network.Network
 
 		err := nm.Pair(ctx,newDevice, password)
 		if err != nil {
-			return ui.ConnectDeviceMsg{Err: err}
+			return messages.ConnectDeviceMsg{Err: err}
 		}
-		return ui.ConnectDeviceMsg{Output: "connection successfully activated"}
+		return messages.ConnectDeviceMsg{Output: "connection successfully activated"}
 	}
 }

@@ -6,7 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/chetanjangir0/blueboy/internal/network"
-	"github.com/chetanjangir0/blueboy/internal/ui"
+	"github.com/chetanjangir0/blueboy/internal/messages"
 )
 
 func FetchPaired(nm network.NetworkManager) tea.Cmd {
@@ -16,9 +16,9 @@ func FetchPaired(nm network.NetworkManager) tea.Cmd {
 
 		devices, err := nm.FetchPaired(ctx)
 		if err != nil {
-			return ui.FetchPairedMsg{Err: err}
+			return messages.FetchPairedMsg{Err: err}
 		}
 
-		return ui.FetchPairedMsg{Devices: devices}
+		return messages.FetchPairedMsg{Devices: devices}
 	}
 }

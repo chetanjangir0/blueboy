@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/chetanjangir0/blueboy/internal/network"
-	"github.com/chetanjangir0/blueboy/internal/ui"
+	"github.com/chetanjangir0/blueboy/internal/messages"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -16,8 +16,8 @@ func ConnectDevice(UUID string, nm network.NetworkManager) tea.Cmd {
 
 		err := nm.Connect(ctx, UUID)
 		if err != nil {
-			return ui.ConnectDeviceMsg{Err: err}
+			return messages.ConnectDeviceMsg{Err: err}
 		}
-		return ui.ConnectDeviceMsg{Output: "connection successfully activated"}
+		return messages.ConnectDeviceMsg{Output: "connection successfully activated"}
 	}
 }

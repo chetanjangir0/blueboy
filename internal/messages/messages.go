@@ -1,4 +1,5 @@
-package ui
+
+package messages 
 
 import "github.com/chetanjangir0/blueboy/internal/network"
 
