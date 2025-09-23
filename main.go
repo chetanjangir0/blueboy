@@ -35,20 +35,6 @@ func main() {
 	}
 }
 
-type connectDeviceMsg struct {
-	output string
-	err    error
-}
-
-type startScanMsg struct {
-	devices []Device
-	err     error
-}
-
-type fetchPairedMsg struct {
-	devices []Device
-	err     error
-}
 
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

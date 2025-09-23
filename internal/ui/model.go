@@ -16,11 +16,6 @@ type Device struct {
 	Security string
 }
 
-type Password struct {
-	isAsking      bool
-	passwordInput textinput.Model
-}
-
 const (
 	MainMenu MenuState = iota
 	ScanMenu
@@ -40,12 +35,6 @@ type model struct {
 }
 
 func InitialModel() model {
-	ti := textinput.New()
-	ti.Placeholder = "Enter password"
-	ti.CharLimit = 20
-	ti.Width = 30
-	ti.EchoMode = textinput.EchoPassword
-	ti.EchoCharacter = '•'
 
 	return model{
 		cursor:        0,
@@ -53,7 +42,7 @@ func InitialModel() model {
 		MainOptions:   []string{"Scan Devices", "Paired Connections"},
 		ScanResults:   []Device{},
 		PairedDevices: []Device{},
-		password:      Password{isAsking: false, passwordInput: ti},
+		password:      NewPasswordModel(),
 	}
 }
 
