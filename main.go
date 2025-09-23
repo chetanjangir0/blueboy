@@ -261,9 +261,5 @@ func pairNewDevice(newDevice Device, password string) tea.Cmd {
 	}
 }
 
-var (
-	box      = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(0, 1)
-	selected = lipgloss.NewStyle().Foreground(lipgloss.Color("2")).Bold(true)
-)
 
 // UI

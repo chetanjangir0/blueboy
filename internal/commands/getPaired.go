@@ -16,7 +16,7 @@ func fetchPaired(nm network.NetworkManager) tea.Cmd {
 
 		devices, err := nm.FetchPaired(ctx)
 		if err != nil {
-			return ui.StartScanMsg{Err: err}
+			return ui.FetchPairedMsg{Err: err}
 		}
 
 		return ui.FetchPairedMsg{Devices: devices}
