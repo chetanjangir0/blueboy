@@ -1,16 +1,16 @@
 package ui
 
-type connectDeviceMsg struct {
-	output string
-	err    error
+type ConnectDeviceMsg struct {
+	Output string
+	Err    error
 }
 
-type startScanMsg struct {
-	devices []Device
-	err     error
+type StartScanMsg struct {
+	Devices []Device
+	Err     error
 }
 
-type fetchPairedMsg struct {
-	devices []Device
-	err     error
+type FetchPairedMsg struct {
+	Devices []Device
+	Err     error
 }
