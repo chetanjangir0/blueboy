@@ -9,7 +9,7 @@ import (
 	"github.com/chetanjangir0/blueboy/internal/ui"
 )
 
-func fetchPaired(nm network.NetworkManager) tea.Cmd {
+func FetchPaired(nm network.NetworkManager) tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()

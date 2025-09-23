@@ -8,16 +8,12 @@ package main
 // styles like loading spinner
 
 import (
-	"context"
-	"fmt"
+	"log"
+
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
-	"log"
+	"github.com/chetanjangir0/blueboy/internal/ui"
 	// "os"
-	"os/exec"
-	"strings"
-	"time"
 )
 
 func main() {
@@ -29,7 +25,7 @@ func main() {
 	// defer f.Close()
 	// log.SetOutput(f)
 
-	program := tea.NewProgram(initialModel(), tea.WithAltScreen())
+	program := tea.NewProgram(ui.InitialModel(), tea.WithAltScreen())
 	if _, err := program.Run(); err != nil {
 		log.Fatal(err)
 	}
@@ -37,229 +33,111 @@ func main() {
 
 
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-
-		case "ctrl+c", "q":
-			if !m.password.isAsking {
-				return m, tea.Quit
-			}
-
-		case "j", "down":
-			if m.cursor < m.itemCount()-1 && !m.password.isAsking {
-				m.cursor++
-			}
-
-		case "k", "up":
-			if m.cursor > 0 && !m.password.isAsking {
-				m.cursor--
-			}
-
-		case "enter":
-			switch m.CurrentMenu {
-			case MainMenu:
-
-				switch m.MainOptions[m.cursor] {
-				case "Scan Devices":
-					m.CurrentMenu = ScanMenu
-					m.cursor = 0
-					m.status = "fetching devices..."
-					return m, startScan()
-				case "Paired Connections":
-					m.CurrentMenu = PairedMenu
-					m.cursor = 0
-					return m, fetchPaired()
-				}
-				m.cursor = 0 // reset cursor pos
-
-			case PairedMenu:
-				m.status = "connecting..."
-				return m, connectDevice(m.PairedDevices[m.cursor].UUID)
-			case ScanMenu:
-				if m.cursor >= len(m.ScanResults) {
-					return m, nil
-				}
-				selectedDevice := m.ScanResults[m.cursor]
-				if selectedDevice.Security == "" {
-					m.status = "connecting..."
-					return m, pairNewDevice(selectedDevice, "")
-				}
-				if !m.password.isAsking {
-					m.password.isAsking = true
-					m.password.passwordInput.Reset()
-					m.password.passwordInput.Focus()
-					m.status = "This network requires a password:"
-					return m, textinput.Blink
-				}
-
-				enteredPassword := m.password.passwordInput.Value()
-				m.password.passwordInput.SetValue("") // Clear immediately
-				m.password.passwordInput.Blur()       // Remove focus
-				m.password.isAsking = false
-
-				m.status = "connecting..."
-				return m, pairNewDevice(selectedDevice, enteredPassword)
-
-			}
-		case "b", "esc":
-			if !m.password.isAsking {
-				m.CurrentMenu = MainMenu
-				m.cursor = 0
-				m.status = ""
-				return m, nil
-			}
-		}
-	case connectDeviceMsg:
-		if msg.err != nil {
-			m.status = msg.err.Error()
-			return m, nil
-		}
-		m.status = msg.output
-		return m, nil
-	case startScanMsg:
-		if msg.err != nil {
-			m.status = msg.err.Error()
-			return m, nil
-		}
-		m.ScanResults = msg.devices
-		m.status = ""
-		return m, nil
-	case fetchPairedMsg:
-		if msg.err != nil {
-			return m, nil
-		}
-		m.PairedDevices = msg.devices
-		return m, nil
-	case tea.WindowSizeMsg:
-		m.width = msg.Width
-		m.height = msg.Height
-	}
-
-	var cmd tea.Cmd
-	if m.password.isAsking {
-		m.password.passwordInput, cmd = m.password.passwordInput.Update(msg)
-	}
-	return m, cmd
-}
-
-func (m model) itemCount() int {
-	switch m.CurrentMenu {
-	case MainMenu:
-		return len(m.MainOptions)
-	case ScanMenu:
-		return len(m.ScanResults)
-	case PairedMenu:
-		return len(m.PairedDevices)
-	default:
-		return 0
-	}
-}
-
-func fetchPaired() tea.Cmd {
-	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-
-		output, err := exec.CommandContext(ctx, "nmcli", "-t", "-f", "NAME,TYPE,UUID", "connection", "show").CombinedOutput()
-		if ctx.Err() == context.DeadlineExceeded {
-			return fetchPairedMsg{err: fmt.Errorf("timeout")}
-		}
-		if err != nil {
-			return fetchPairedMsg{err: err}
-		}
-		outputString := strings.Trim(string(output), "\n")
-		outputStringSlice := strings.Split(outputString, "\n")
-
-		var devices = make([]Device, len(outputStringSlice))
-		for i, d := range outputStringSlice {
-			deviceInfo := strings.Split(d, ":") // "Device <name> <type>"
-			if len(deviceInfo) != 3 {
-				return fetchPairedMsg{err: fmt.Errorf("unexpected number of fields")}
-			}
-			devices[i] = Device{
-				Name: deviceInfo[0],
-				Type: deviceInfo[1],
-				UUID: deviceInfo[2],
-			}
-		}
-		return fetchPairedMsg{devices: devices}
-	}
-}
-
-func startScan() tea.Cmd {
-	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-		output, err := exec.CommandContext(ctx, "nmcli", "-t", "-f", "SSID,SECURITY", "device", "wifi", "list").CombinedOutput()
-		if ctx.Err() == context.DeadlineExceeded {
-			return startScanMsg{err: fmt.Errorf("Error: connection timed out")}
-
-		}
-		if err != nil {
-			return startScanMsg{err: err}
-		}
-		outputString := strings.Trim(string(output), "\n")
-		outputStringSlice := strings.Split(outputString, "\n")
-
-		var devices = make([]Device, len(outputStringSlice))
-		for i, d := range outputStringSlice {
-			deviceInfo := strings.Split(d, ":")
-
-			if len(deviceInfo) == 0 { // if there is no ssid/name
-				continue
-			} else if len(deviceInfo) == 1 { // if there is no security
-				deviceInfo = append(deviceInfo, " ")
-			}
-
-			devices[i] = Device{
-				Name:     deviceInfo[0],
-				Type:     "wifi",
-				Security: deviceInfo[1],
-			}
-		}
-		return startScanMsg{devices: devices}
-	}
-
-}
-
-func connectDevice(UUID string) tea.Cmd {
-	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-
-		_, err := exec.CommandContext(ctx, "nmcli", "connection", "up", UUID).CombinedOutput()
-		if ctx.Err() == context.DeadlineExceeded {
-			return connectDeviceMsg{err: fmt.Errorf("Error: connection timed out")}
-		}
-		if err != nil {
-			return connectDeviceMsg{err: err}
-		}
-		return connectDeviceMsg{output: "connection successfully activated"}
-	}
-}
-
-func pairNewDevice(newDevice Device, password string) tea.Cmd {
-	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-
-		var err error
-		if password != "" {
-			_, err = exec.CommandContext(ctx, "nmcli", "device", "wifi", "connect", newDevice.Name, "password", password).CombinedOutput()
-		} else {
-			_, err = exec.CommandContext(ctx, "nmcli", "device", "wifi", "connect", newDevice.Name).CombinedOutput()
-		}
-		if ctx.Err() == context.DeadlineExceeded {
-			return connectDeviceMsg{err: fmt.Errorf("Error: connection timed out")}
-		}
-		if err != nil {
-			return connectDeviceMsg{err: err}
-		}
-		return connectDeviceMsg{output: "connection successfully activated"}
-	}
-}
 
 
-// UI
+// func fetchPaired() tea.Cmd {
+// 	return func() tea.Msg {
+// 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+// 		defer cancel()
+//
+// 		output, err := exec.CommandContext(ctx, "nmcli", "-t", "-f", "NAME,TYPE,UUID", "connection", "show").CombinedOutput()
+// 		if ctx.Err() == context.DeadlineExceeded {
+// 			return fetchPairedMsg{err: fmt.Errorf("timeout")}
+// 		}
+// 		if err != nil {
+// 			return fetchPairedMsg{err: err}
+// 		}
+// 		outputString := strings.Trim(string(output), "\n")
+// 		outputStringSlice := strings.Split(outputString, "\n")
+//
+// 		var devices = make([]Device, len(outputStringSlice))
+// 		for i, d := range outputStringSlice {
+// 			deviceInfo := strings.Split(d, ":") // "Device <name> <type>"
+// 			if len(deviceInfo) != 3 {
+// 				return fetchPairedMsg{err: fmt.Errorf("unexpected number of fields")}
+// 			}
+// 			devices[i] = Device{
+// 				Name: deviceInfo[0],
+// 				Type: deviceInfo[1],
+// 				UUID: deviceInfo[2],
+// 			}
+// 		}
+// 		return fetchPairedMsg{devices: devices}
+// 	}
+// }
+//
+// func startScan() tea.Cmd {
+// 	return func() tea.Msg {
+// 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+// 		defer cancel()
+// 		output, err := exec.CommandContext(ctx, "nmcli", "-t", "-f", "SSID,SECURITY", "device", "wifi", "list").CombinedOutput()
+// 		if ctx.Err() == context.DeadlineExceeded {
+// 			return startScanMsg{err: fmt.Errorf("Error: connection timed out")}
+//
+// 		}
+// 		if err != nil {
+// 			return startScanMsg{err: err}
+// 		}
+// 		outputString := strings.Trim(string(output), "\n")
+// 		outputStringSlice := strings.Split(outputString, "\n")
+//
+// 		var devices = make([]Device, len(outputStringSlice))
+// 		for i, d := range outputStringSlice {
+// 			deviceInfo := strings.Split(d, ":")
+//
+// 			if len(deviceInfo) == 0 { // if there is no ssid/name
+// 				continue
+// 			} else if len(deviceInfo) == 1 { // if there is no security
+// 				deviceInfo = append(deviceInfo, " ")
+// 			}
+//
+// 			devices[i] = Device{
+// 				Name:     deviceInfo[0],
+// 				Type:     "wifi",
+// 				Security: deviceInfo[1],
+// 			}
+// 		}
+// 		return startScanMsg{devices: devices}
+// 	}
+//
+// }
+//
+// func connectDevice(UUID string) tea.Cmd {
+// 	return func() tea.Msg {
+// 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+// 		defer cancel()
+//
+// 		_, err := exec.CommandContext(ctx, "nmcli", "connection", "up", UUID).CombinedOutput()
+// 		if ctx.Err() == context.DeadlineExceeded {
+// 			return connectDeviceMsg{err: fmt.Errorf("Error: connection timed out")}
+// 		}
+// 		if err != nil {
+// 			return connectDeviceMsg{err: err}
+// 		}
+// 		return connectDeviceMsg{output: "connection successfully activated"}
+// 	}
+// }
+//
+// func pairNewDevice(newDevice Device, password string) tea.Cmd {
+// 	return func() tea.Msg {
+// 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+// 		defer cancel()
+//
+// 		var err error
+// 		if password != "" {
+// 			_, err = exec.CommandContext(ctx, "nmcli", "device", "wifi", "connect", newDevice.Name, "password", password).CombinedOutput()
+// 		} else {
+// 			_, err = exec.CommandContext(ctx, "nmcli", "device", "wifi", "connect", newDevice.Name).CombinedOutput()
+// 		}
+// 		if ctx.Err() == context.DeadlineExceeded {
+// 			return connectDeviceMsg{err: fmt.Errorf("Error: connection timed out")}
+// 		}
+// 		if err != nil {
+// 			return connectDeviceMsg{err: err}
+// 		}
+// 		return connectDeviceMsg{output: "connection successfully activated"}
+// 	}
+// }
+//
+//
+// // UI
