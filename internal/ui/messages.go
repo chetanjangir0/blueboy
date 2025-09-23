@@ -1,16 +1,18 @@
 package ui
 
+import "github.com/chetanjangir0/blueboy/internal/network"
+
 type ConnectDeviceMsg struct {
 	Output string
 	Err    error
 }
 
 type StartScanMsg struct {
-	Devices []Device
+	Devices []network.Device
 	Err     error
 }
 
 type FetchPairedMsg struct {
-	Devices []Device
+	Devices []network.Device
 	Err     error
 }

@@ -4,17 +4,11 @@ import (
 	"log"
 	"os/exec"
 
-	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/chetanjangir0/blueboy/internal/network"
 )
 type MenuState int
 
-type Device struct {
-	Name     string
-	Type     string
-	UUID     string
-	Security string
-}
 
 const (
 	MainMenu MenuState = iota
@@ -26,8 +20,8 @@ type model struct {
 	cursor        int
 	CurrentMenu   MenuState
 	MainOptions   []string
-	ScanResults   []Device
-	PairedDevices []Device
+	ScanResults   []network.Device
+	PairedDevices []network.Device
 	status        string
 	password      Password // new connection password
 	width         int
@@ -40,8 +34,8 @@ func InitialModel() model {
 		cursor:        0,
 		CurrentMenu:   MainMenu,
 		MainOptions:   []string{"Scan Devices", "Paired Connections"},
-		ScanResults:   []Device{},
-		PairedDevices: []Device{},
+		ScanResults:   []network.Device{},
+		PairedDevices: []network.Device{},
 		password:      NewPasswordModel(),
 	}
 }
