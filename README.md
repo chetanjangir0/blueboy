@@ -39,7 +39,7 @@ A terminal-based Wi-Fi manager built using [`bubbletea`](https://github.com/char
 ```bash
 git clone https://github.com/yourname/blueboy.git
 cd blueboy
-go build -o blueboy
+go build -o blueboy ./cmd/tui
 sudo mv blueboy /usr/local/bin
 ```
 
