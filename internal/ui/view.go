@@ -2,7 +2,7 @@ package ui
 
 import (
 	"strings"
-
+	"github.com/chetanjangir0/blueboy/internal/network"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -29,14 +29,14 @@ func (m model) View() string {
 	return layoutBox(title, main, m.status, m.width, m.height)
 }
 
-func renderList[T string | Device](list []T, cursor int) string {
+func renderList[T string | network.Device](list []T, cursor int) string {
 	var out []string
 	for i, item := range list {
 		var line string
 		switch v := any(item).(type) {
 		case string:
 			line = v
-		case Device:
+		case network.Device:
 			line = v.Name
 		}
 		if i == cursor {

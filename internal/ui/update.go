@@ -4,6 +4,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/chetanjangir0/blueboy/internal/commands"
+	"github.com/chetanjangir0/blueboy/internal/messages"
 )
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -45,7 +46,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			case PairedMenu:
 				m.status = "connecting..."
-				return m, ConnectDevice(m.PairedDevices[m.cursor].UUID, m.nm)
+				return m, commands.ConnectDevice(m.PairedDevices[m.cursor].UUID, m.nm)
 			case ScanMenu:
 				if m.cursor >= len(m.ScanResults) {
 					return m, nil
@@ -53,7 +54,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				selectedDevice := m.ScanResults[m.cursor]
 				if selectedDevice.Security == "" {
 					m.status = "connecting..."
-					return m, pairNewDevice(selectedDevice, "")
+					return m, commands.PairNewDevice(selectedDevice, "", m.nm)
 				}
 				if !m.password.isAsking {
 					m.password.isAsking = true
@@ -69,7 +70,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.password.isAsking = false
 
 				m.status = "connecting..."
-				return m, pairNewDevice(selectedDevice, enteredPassword)
+				return m, commands.PairNewDevice(selectedDevice, enteredPassword, m.nm)
 
 			}
 		case "b", "esc":
@@ -80,26 +81,26 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		}
-	case connectDeviceMsg:
-		if msg.err != nil {
-			m.status = msg.err.Error()
+	case messages.ConnectDeviceMsg:
+		if msg.Err != nil {
+			m.status = msg.Err.Error()
 			return m, nil
 		}
-		m.status = msg.output
+		m.status = msg.Output
 		return m, nil
-	case startScanMsg:
-		if msg.err != nil {
-			m.status = msg.err.Error()
+	case messages.StartScanMsg:
+		if msg.Err != nil {
+			m.status = msg.Err.Error()
 			return m, nil
 		}
-		m.ScanResults = msg.devices
+		m.ScanResults = msg.Devices
 		m.status = ""
 		return m, nil
-	case fetchPairedMsg:
-		if msg.err != nil {
+	case messages.FetchPairedMsg:
+		if msg.Err != nil {
 			return m, nil
 		}
-		m.PairedDevices = msg.devices
+		m.PairedDevices = msg.Devices
 		return m, nil
 	case tea.WindowSizeMsg:
 		m.width = msg.Width

@@ -9,7 +9,7 @@ import (
 	"github.com/chetanjangir0/blueboy/internal/messages"
 )
 
-func pairNewDevice(newDevice network.Device, password string, nm network.NetworkManager) tea.Cmd {
+func PairNewDevice(newDevice network.Device, password string, nm network.NetworkManager) tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
