@@ -1,6 +1,6 @@
 # Blueboy - TUI Network Manager (Go)
 
-A terminal-based Wi-Fi manager built using [`bubbletea`](https://github.com/charmbracelet/bubbletea), providing a keyboard-driven interface to scan, view, and connect to networks via `nmcli`.
+A terminal-based Wi-Fi manager with vim keybindings providing a keyboard-driven interface to scan, view, and connect to networks via `nmcli`.
 
 ---
 
