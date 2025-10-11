@@ -32,8 +32,12 @@
           
           nativeBuildInputs = [ pkgs.makeWrapper ];
           
-          # Ensure nmcli is available at runtime
+          # Rename binary and ensure nmcli is available at runtime
           postInstall = ''
+            # Rename tui to blueboy
+            mv $out/bin/tui $out/bin/blueboy
+            
+            # Wrap the renamed binary
             wrapProgram $out/bin/blueboy \
               --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.networkmanager ]}
           '';
