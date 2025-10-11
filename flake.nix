@@ -34,7 +34,7 @@
           
           # Ensure nmcli is available at runtime
           postInstall = ''
-            wrapProgram $out/bin/tui \
+            wrapProgram $out/bin/blueboy \
               --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.networkmanager ]}
           '';
           
