@@ -54,7 +54,7 @@
             homepage = "https://github.com/chetanjangir0/blueboy";
             license = licenses.mit;
             maintainers = [ "chetan" ];
-            mainProgram = "tui";
+            mainProgram = "blueboy";
             platforms = platforms.linux;
           };
         };
