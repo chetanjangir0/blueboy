@@ -6,34 +6,32 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
-      let pkgs = nixpkgs.legacyPackages.${system};
-      in {
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
+      let
+        pkgs = nixpkgs.legacyPackages.${system};
+      in
+      {
         packages.default = pkgs.buildGoModule {
           pname = "blueboy";
           version = "0.1.0";
-
           src = ./.;
-
           vendorHash = "sha256-3RgtCmWae1OqD3hBO84WghW7rlZ6yRLw9WHRIvq/qsY=";
-
           proxyVendor = true;
-
-          subPackages = [ "cmd/tui" ];
-
           buildInputs = [ pkgs.networkmanager ];
-
           nativeBuildInputs = [ pkgs.makeWrapper ];
 
-          postInstall = ''
-            mv $out/bin/tui $out/bin/blueboy
-
-            wrapProgram $out/bin/blueboy \
-              --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.networkmanager ]}
-          '';
-
-          ldflags = [ "-s" "-w" "-X main.version=${self.rev or "dev"}" ];
+          ldflags = [
+            "-s"
+            "-w"
+            "-X main.version=${self.rev or "dev"}"
+          ];
 
           meta = with pkgs.lib; {
             description = "A simple TUI network manager";
@@ -46,7 +44,13 @@
         };
 
         devShells.default = pkgs.mkShell {
-          buildInputs = with pkgs; [ go gopls gotools go-tools networkmanager ];
+          buildInputs = with pkgs; [
+            go
+            gopls
+            gotools
+            go-tools
+            networkmanager
+          ];
 
           shellHook = ''
             echo "Blueboy development environment"
@@ -55,5 +59,6 @@
           '';
         };
 
-      });
+      }
+    );
 }
