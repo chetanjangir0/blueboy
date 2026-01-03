@@ -37,7 +37,7 @@ A terminal-based Wi-Fi manager with vim keybindings providing a keyboard-driven 
 ## Installation (Linux)
 
 ```bash
-git clone https://github.com/yourname/blueboy.git
+git clone https://github.com/chetanjangir0/blueboy.git
 cd blueboy
 go build -o blueboy ./cmd/tui
 sudo mv blueboy /usr/local/bin
